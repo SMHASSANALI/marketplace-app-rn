@@ -1,0 +1,8 @@
+/**
+ * Global CSS entry point for NativeWind v4.
+ * This file is imported once in app/_layout.tsx.
+ * NativeWind reads this to generate the style sheet.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

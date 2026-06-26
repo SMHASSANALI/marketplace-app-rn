@@ -1,17 +1,8 @@
-/**
- * Owner tab navigator.
- *
- * Tabs (v0.1 placeholders — screens filled in subsequent versions):
- *  Dashboard  — revenue, stock alerts, pending actions
- *  Orders     — full order queue with filters
- *  Products   — catalog management
- *  Settings   — delivery bands, riders, manager accounts
- */
-
-import { Tabs }           from 'expo-router';
-import { Ionicons }       from '@expo/vector-icons';
-import type { ColorValue } from 'react-native';
-import { COLORS }         from '@/lib/theme';
+import { Tabs }                    from 'expo-router';
+import { Ionicons }                from '@expo/vector-icons';
+import type { ColorValue }         from 'react-native';
+import { useSafeAreaInsets }       from 'react-native-safe-area-context';
+import { COLORS }                  from '@/lib/theme';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -21,36 +12,39 @@ function tabIcon(name: IoniconName) {
   );
 }
 
-const TAB_BAR_STYLE = {
-  backgroundColor: COLORS.surface,
-  borderTopColor:  COLORS.border,
-  height:          60,
-  paddingBottom:   8,
-};
-
-const SCREEN_OPTIONS = {
-  tabBarActiveTintColor:   COLORS.brand,
-  tabBarInactiveTintColor: COLORS.muted,
-  tabBarStyle:             TAB_BAR_STYLE,
-  headerStyle:    { backgroundColor: COLORS.bg },
-  headerTintColor:COLORS.text,
-  headerTitleStyle:{ fontWeight: '700' as const },
-};
-
 export default function OwnerLayout() {
+  const { bottom } = useSafeAreaInsets();
+
   return (
-    <Tabs screenOptions={SCREEN_OPTIONS}>
+    <Tabs screenOptions={{
+      tabBarActiveTintColor:   COLORS.brand,
+      tabBarInactiveTintColor: COLORS.muted,
+      tabBarStyle: {
+        backgroundColor: COLORS.surface,
+        borderTopColor:  COLORS.border,
+        borderTopWidth:  1,
+        height:          56 + bottom,
+        paddingBottom:   bottom > 0 ? bottom : 8,
+        paddingTop:      6,
+        elevation:       8,
+      },
+      tabBarLabelStyle: { fontSize: 10, fontWeight: '600' as const },
+      headerStyle:         { backgroundColor: COLORS.surface },
+      headerShadowVisible: true,
+      headerTintColor:     COLORS.text,
+      headerTitleStyle:    { fontWeight: '700' as const, fontSize: 17 },
+    }}>
       <Tabs.Screen
         name="index"
-        options={{ title: 'Dashboard', tabBarIcon: tabIcon('home-outline') }}
+        options={{ title: 'Dashboard', headerShown: false, tabBarIcon: tabIcon('home-outline') }}
       />
       <Tabs.Screen
         name="orders"
-        options={{ title: 'Orders', tabBarIcon: tabIcon('list-outline') }}
+        options={{ title: 'Orders', headerShown: false, tabBarIcon: tabIcon('list-outline') }}
       />
       <Tabs.Screen
         name="products"
-        options={{ title: 'Products', tabBarIcon: tabIcon('cube-outline') }}
+        options={{ title: 'Products', headerShown: false, tabBarIcon: tabIcon('cube-outline') }}
       />
       <Tabs.Screen
         name="receipts"

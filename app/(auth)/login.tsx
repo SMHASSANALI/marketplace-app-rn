@@ -75,7 +75,7 @@ export default function LoginScreen() {
   return (
     <Screen scrollable padded={false}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         {/* Header */}

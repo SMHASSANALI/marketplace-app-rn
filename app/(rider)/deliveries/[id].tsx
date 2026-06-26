@@ -127,6 +127,7 @@ export default function DeliveryDetailScreen() {
       amountCollected = Math.round(parsed);
     }
 
+    if (!order) return;
     const confirmMsg = isCOD
       ? `Mark ${order.order_code} as delivered and log cash collected: ${formatCurrency(amountCollected!)}`
       : `Mark ${order.order_code} as delivered?`;

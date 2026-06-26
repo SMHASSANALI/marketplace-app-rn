@@ -9,20 +9,21 @@
  * Full permission scoping implemented in v0.15.
  */
 
-import { Tabs }     from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS }   from '@/lib/theme';
+import { Tabs }        from 'expo-router';
+import { Ionicons }    from '@expo/vector-icons';
+import type { ColorValue } from 'react-native';
+import { COLORS }      from '@/lib/theme';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 const tabIcon = (name: IoniconName) =>
-  ({ color, size }: { color: string; size: number }) =>
-    <Ionicons name={name} size={size} color={color} />;
+  ({ color, size }: { focused: boolean; color: ColorValue; size: number }) =>
+    <Ionicons name={name} size={size} color={color as string} />;
 
 export default function ManagerLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor:   COLORS.teal,
+        tabBarActiveTintColor:   COLORS.brand,
         tabBarInactiveTintColor: COLORS.muted,
         tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: COLORS.border, height: 60, paddingBottom: 8 },
         headerStyle:     { backgroundColor: COLORS.bg },

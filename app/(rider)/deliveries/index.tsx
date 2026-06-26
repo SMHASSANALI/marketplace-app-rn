@@ -114,7 +114,6 @@ export default function RiderDeliveriesScreen() {
           />
         )}
         style={{ flexGrow: 0 }}
-        listKey="filters"
       />
 
       {/* Delivery list */}

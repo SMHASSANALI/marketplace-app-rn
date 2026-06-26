@@ -48,12 +48,12 @@ function InfoCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-function InfoRow({ label, value, color }: { label: string; value: string; color?: string }) {
+function InfoRow({ label, value, color, bold }: { label: string; value: string; color?: string; bold?: boolean }) {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
       <Text style={{ fontSize: FONT_SIZES.sm, color: COLORS.muted }}>{label}</Text>
       <Text style={{
-        fontSize: FONT_SIZES.sm, fontWeight: '500',
+        fontSize: FONT_SIZES.sm, fontWeight: bold ? '700' : '500',
         color: color ?? COLORS.text, maxWidth: '60%', textAlign: 'right',
       }}>
         {value}

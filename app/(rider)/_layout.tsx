@@ -6,14 +6,15 @@
  *  Deposits   — cash deposit batch logging
  */
 
-import { Tabs }     from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS }   from '@/lib/theme';
+import { Tabs }        from 'expo-router';
+import { Ionicons }    from '@expo/vector-icons';
+import type { ColorValue } from 'react-native';
+import { COLORS }      from '@/lib/theme';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 const tabIcon = (name: IoniconName) =>
-  ({ color, size }: { color: string; size: number }) =>
-    <Ionicons name={name} size={size} color={color} />;
+  ({ color, size }: { focused: boolean; color: ColorValue; size: number }) =>
+    <Ionicons name={name} size={size} color={color as string} />;
 
 export default function RiderLayout() {
   return (

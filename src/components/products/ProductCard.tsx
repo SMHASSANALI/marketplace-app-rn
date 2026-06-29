@@ -121,18 +121,17 @@ export function ProductCard({ product, showBasePrice = false, onPress }: Props) 
           </Text>
         </View>
 
-        {/* Base price — Owner only */}
+        {/* Prices — Owner only */}
         {showBasePrice && (
-          <Text
-            style={{
-              fontSize:   FONT_SIZES.sm,
-              color:      COLORS.brand,
-              fontWeight: '600',
-              marginTop:  3,
-            }}
-          >
-            {formatCurrency(product.base_price)}
-          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 3 }}>
+            <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted }}>
+              Cost: {formatCurrency(product.buying_price)}
+            </Text>
+            <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted }}>·</Text>
+            <Text style={{ fontSize: FONT_SIZES.sm, color: COLORS.brand, fontWeight: '600' }}>
+              Floor: {formatCurrency(product.selling_price)}
+            </Text>
+          </View>
         )}
       </View>
 

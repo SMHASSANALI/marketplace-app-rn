@@ -131,7 +131,7 @@ function ProductRow({ product, onPress }: { product: Product; onPress: () => voi
               {inactive ? `${product.qty_available} in stock` : stockLabel}
             </Text>
           </View>
-          <Text style={s.priceText}>{formatCurrency(product.base_price)}</Text>
+          <Text style={s.priceText}>{formatCurrency(product.selling_price)}</Text>
         </View>
       </View>
 
@@ -221,13 +221,22 @@ export default function OwnerProductsScreen() {
             {activeCount} active · {allProducts.length} total
           </Text>
         </View>
-        <Pressable
-          onPress={() => router.push('/modals/product-new')}
-          style={({ pressed }) => [s.newBtn, pressed && { opacity: 0.82 }]}
-        >
-          <Ionicons name="add" size={17} color="#fff" />
-          <Text style={s.newBtnText}>New</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Pressable
+            onPress={() => router.push('/(owner)/bulk-upload')}
+            style={({ pressed }) => [s.newBtn, { backgroundColor: C.brandDark }, pressed && { opacity: 0.82 }]}
+          >
+            <Ionicons name="cloud-upload-outline" size={15} color="#fff" />
+            <Text style={s.newBtnText}>Bulk</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/modals/product-new')}
+            style={({ pressed }) => [s.newBtn, pressed && { opacity: 0.82 }]}
+          >
+            <Ionicons name="add" size={17} color="#fff" />
+            <Text style={s.newBtnText}>New</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* ── Search ── */}

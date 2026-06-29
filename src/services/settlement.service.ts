@@ -21,14 +21,15 @@ function buildSettlement(s: (typeof db.settlements)[0]): SettlementFull {
         product_name:           product?.name        ?? 'Unknown',
         product_emoji:          product?.image_emoji ?? '📦',
         quantity:               li.quantity,
+        agent_price_snapshot:   li.agent_price_snapshot,
         selling_price_snapshot: li.selling_price_snapshot,
-        base_price_snapshot:    li.base_price_snapshot,
+        buying_price_snapshot:  li.buying_price_snapshot,
       };
     });
   return { ...s, agent, line_items };
 }
 
-const STATUS_ORDER: Record<SettlementStatus, number> = { pending: 0, approved: 1, paid: 2 };
+const STATUS_ORDER: Record<SettlementStatus, number> = { pending: 0, approved: 1, paid: 2, confirmed: 3 };
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -111,17 +112,50 @@ export async function approveSettlement(id: number): Promise<SettlementFull> {
 
 export async function markSettlementPaid(
   id: number,
+  paymentReference: string,
   paymentReceiptUri?: string,
+  paidBy?: number,
 ): Promise<SettlementFull> {
   await simulateDelay();
   const idx = db.settlements.findIndex(s => s.id === id);
   if (idx === -1) throw new ApiError(`Settlement #${id} not found.`, 'SETTLEMENT_NOT_FOUND', 404);
   if (db.settlements[idx].status !== 'approved')
     throw new ApiError('Only approved settlements can be marked paid.', 'SETTLEMENT_INVALID_STATE');
+  if (!paymentReference.trim())
+    throw new ApiError('Payment reference is required.', 'SETTLEMENT_REFERENCE_REQUIRED');
   db.settlements[idx] = {
     ...db.settlements[idx],
-    status: 'paid',
+    status:              'paid',
+    paid_at:             new Date().toISOString(),
+    paid_by:             paidBy ?? null,
+    payment_reference:   paymentReference.trim(),
     payment_receipt_uri: paymentReceiptUri ?? null,
   };
+  return buildSettlement(db.settlements[idx]);
+}
+
+export async function acknowledgeSettlement(id: number, comment?: string): Promise<SettlementFull> {
+  await simulateDelay();
+  const idx = db.settlements.findIndex(s => s.id === id);
+  if (idx === -1) throw new ApiError(`Settlement #${id} not found.`, 'SETTLEMENT_NOT_FOUND', 404);
+  if (db.settlements[idx].status !== 'paid')
+    throw new ApiError('Only paid settlements can be acknowledged.', 'SETTLEMENT_INVALID_STATE');
+  db.settlements[idx] = {
+    ...db.settlements[idx],
+    status:          'confirmed',
+    acknowledged_at: new Date().toISOString(),
+    dispute_comment: comment ?? null,
+  };
+  return buildSettlement(db.settlements[idx]);
+}
+
+export async function disputeSettlement(id: number, comment: string): Promise<SettlementFull> {
+  await simulateDelay();
+  if (!comment.trim()) throw new ApiError('Dispute comment is required.', 'DISPUTE_COMMENT_REQUIRED');
+  const idx = db.settlements.findIndex(s => s.id === id);
+  if (idx === -1) throw new ApiError(`Settlement #${id} not found.`, 'SETTLEMENT_NOT_FOUND', 404);
+  if (db.settlements[idx].status !== 'paid')
+    throw new ApiError('Only paid settlements can be disputed.', 'SETTLEMENT_INVALID_STATE');
+  db.settlements[idx] = { ...db.settlements[idx], dispute_comment: comment.trim() };
   return buildSettlement(db.settlements[idx]);
 }

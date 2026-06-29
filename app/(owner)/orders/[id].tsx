@@ -306,21 +306,37 @@ export default function OwnerOrderDetailScreen() {
                     {item.product_name} ×{item.quantity}
                   </Text>
                   <Text style={{ fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.text }}>
-                    {formatCurrency(item.selling_price_snapshot * item.quantity)}
+                    {formatCurrency(item.agent_price_snapshot * item.quantity)}
                   </Text>
                 </View>
                 {/* Price breakdown */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 20 }}>
                   <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted }}>
-                    Base: {formatCurrency(item.base_price_snapshot)} ea
+                    Cost: {formatCurrency(item.buying_price_snapshot)} ea
                   </Text>
                   <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted }}>
-                    Sell: {formatCurrency(item.selling_price_snapshot)} ea
+                    Floor: {formatCurrency(item.selling_price_snapshot)} ea
                   </Text>
                   <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.teal, fontWeight: '600' }}>
                     Comm: +{formatCurrency(item.commission_amount)}
                   </Text>
                 </View>
+                {/* Quantity mismatch flags */}
+                {(item.pickup_mismatch_flag || item.delivery_mismatch_flag) && (
+                  <View style={{ paddingLeft: 20, marginTop: 2, gap: 2 }}>
+                    {item.pickup_mismatch_flag && item.quantity_picked_up != null && (
+                      <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.warning }}>
+                        ⚠ Picked up {item.quantity_picked_up} of {item.quantity}
+                        {item.exclusion_reason ? ` — ${item.exclusion_reason}` : ''}
+                      </Text>
+                    )}
+                    {item.delivery_mismatch_flag && item.quantity_delivered != null && (
+                      <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.danger }}>
+                        ⚠ Delivered {item.quantity_delivered} of {item.quantity_picked_up ?? item.quantity}
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
               {i < fulfilledItems.length - 1 && (
                 <View style={{ height: 1, backgroundColor: COLORS.border }} />

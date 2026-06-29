@@ -56,6 +56,14 @@ export interface AuthSession {
 // PRODUCTS & INVENTORY
 // ---------------------------------------------------------------------------
 
+export interface Category {
+  id: number;
+  name: string;
+  is_active: boolean;
+  created_by: number;
+  created_at: string;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -63,8 +71,11 @@ export interface Product {
   /** Emoji used as a product icon (e.g. "📱"). */
   image_emoji: string;
   category: string | null;
-  /** Buying/cost price in whole rupees — private to Owner; used as commission floor. */
-  base_price: number;
+  category_id: number | null;
+  /** Owner's cost in whole rupees — never shown to Agents. */
+  buying_price: number;
+  /** Owner's listed price — shown to Agents, this is their price floor. */
+  selling_price: number;
   qty_available: number;
   /** Alert the Owner when stock falls at or below this threshold. */
   low_stock_threshold: number;
@@ -169,6 +180,11 @@ export interface Order {
   /** Timestamp when status changed to 'delivered'. Starts the 7-day commission hold. */
   delivered_at: string | null;
   created_at: string;
+  /** Feature 1: set when Rider confirms pickup, before moving to out_for_delivery. */
+  pickup_confirmed_at: string | null;
+  pickup_confirmed_by: number | null;
+  /** Feature 1: true once Rider completes the delivery item confirmation step. */
+  delivery_items_confirmed: boolean;
 }
 
 export interface OrderLineItem {
@@ -176,15 +192,27 @@ export interface OrderLineItem {
   order_id: number;
   product_id: number;
   quantity: number;
-  /** Base price at time of order — never changes after order creation. */
-  base_price_snapshot: number;
-  /** Agent-set selling price — must be >= base_price_snapshot. */
+  /** Owner's cost at order time — for Owner profit calculation only, never shown to Agents. */
+  buying_price_snapshot: number;
+  /** Owner's listed price at order time — Agent's price floor. */
   selling_price_snapshot: number;
-  /** (selling_price_snapshot - base_price_snapshot) × quantity. Always >= 0. */
+  /** What the Agent actually charged the Customer. Must be >= selling_price_snapshot. */
+  agent_price_snapshot: number;
+  /** (agent_price_snapshot - selling_price_snapshot) × effective_quantity. */
   commission_amount: number;
+  /** (selling_price_snapshot - buying_price_snapshot) × effective_quantity. Owner-only. */
+  owner_profit_amount: number;
   /** false if item was excluded due to insufficient stock (partial fulfillment). */
   fulfilled: boolean;
   exclusion_reason: string | null;
+  /** Feature 1: quantity Rider confirmed picking up from Owner. */
+  quantity_picked_up: number | null;
+  /** Feature 1: quantity Rider confirmed delivering to Customer. */
+  quantity_delivered: number | null;
+  /** Feature 1: true if quantity_picked_up < quantity. */
+  pickup_mismatch_flag: boolean;
+  /** Feature 1: true if quantity_delivered < quantity_picked_up (or quantity if pickup not confirmed). */
+  delivery_mismatch_flag: boolean;
 }
 
 export interface OrderStatusLog {
@@ -247,8 +275,9 @@ export interface SettlementFull extends Settlement {
     product_name:           string;
     product_emoji:          string;
     quantity:               number;
+    agent_price_snapshot:   number;
     selling_price_snapshot: number;
-    base_price_snapshot:    number;
+    buying_price_snapshot:  number;
   })[];
 }
 
@@ -285,7 +314,7 @@ export interface DepositFull extends CashDeposit {
 // SETTLEMENTS & LEDGER
 // ---------------------------------------------------------------------------
 
-export type SettlementStatus = 'pending' | 'approved' | 'paid';
+export type SettlementStatus = 'pending' | 'approved' | 'paid' | 'confirmed';
 
 export interface Settlement {
   id: number;
@@ -299,6 +328,12 @@ export interface Settlement {
   created_at: string;
   /** Local URI or data-URI of the payment proof screenshot uploaded by the Owner. */
   payment_receipt_uri: string | null;
+  /** Feature 3: two-sided payment record. */
+  paid_at: string | null;
+  paid_by: number | null;
+  payment_reference: string | null;
+  acknowledged_at: string | null;
+  dispute_comment: string | null;
 }
 
 export interface SettlementLineItem {
@@ -306,6 +341,35 @@ export interface SettlementLineItem {
   settlement_id: number;
   order_line_item_id: number;
   commission_amount: number;
+}
+
+/** Feature 3: Rider payout settlement. */
+export interface RiderSettlement {
+  id: number;
+  rider_id: number;
+  period_start: string;
+  period_end: string;
+  total_payout: number;
+  status: SettlementStatus;
+  triggered_by: 'scheduled' | 'manual';
+  created_at: string;
+  paid_at: string | null;
+  paid_by: number | null;
+  payment_reference: string | null;
+  acknowledged_at: string | null;
+  dispute_comment: string | null;
+}
+
+export interface RiderSettlementLineItem {
+  id: number;
+  rider_settlement_id: number;
+  order_id: number;
+  payout_amount: number;
+}
+
+export interface RiderSettlementFull extends RiderSettlement {
+  rider: User;
+  line_items: (RiderSettlementLineItem & { order_code: string })[];
 }
 
 export interface LedgerEntry {
@@ -338,12 +402,14 @@ export interface OrderFull extends Order {
     product_emoji: string;
   })[];
   payment_receipt: PaymentReceipt | null;
-  /** Sum of selling_price_snapshot × quantity for fulfilled items only. */
+  /** Sum of agent_price_snapshot × effective_quantity for fulfilled items only. */
   subtotal: number;
   /** subtotal + delivery_fee_snapshot. */
   total: number;
   /** Sum of commission_amount for fulfilled items only. */
   commission_total: number;
+  /** Sum of owner_profit_amount for fulfilled items only. Owner-only. */
+  owner_profit_total: number;
   /** Non-null only when status === 'delivered'. Describes hold period state. */
   hold_info: CommissionHoldInfo | null;
 }

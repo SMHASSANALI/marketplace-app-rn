@@ -2,7 +2,7 @@
  * Seed data — Products.
  *
  * Five active products owned by the Owner (user ID 1).
- * base_price is in whole rupees — the floor for Agent-set selling price.
+ * buying_price: Owner's cost (private). selling_price: Owner's listed price = Agent's floor.
  */
 import { Product } from '@/types';
 import { USER_IDS } from './users';
@@ -14,7 +14,9 @@ export const seedProducts: Product[] = [
     description:         'Shockproof silicone case, universal fit',
     image_emoji:         '📱',
     category:            'Accessories',
-    base_price:          90,
+    category_id:         2,
+    buying_price:        50,
+    selling_price:       90,
     qty_available:       49,
     low_stock_threshold: 10,
     is_active:           true,
@@ -28,7 +30,9 @@ export const seedProducts: Product[] = [
     description:         'Bluetooth 5.0, 20h playtime',
     image_emoji:         '🎧',
     category:            'Electronics',
-    base_price:          1800,
+    category_id:         1,
+    buying_price:        1500,
+    selling_price:       1800,
     qty_available:       4,
     low_stock_threshold: 5,
     is_active:           true,
@@ -42,7 +46,9 @@ export const seedProducts: Product[] = [
     description:         'Universal silicone strap, 22 mm',
     image_emoji:         '⌚',
     category:            'Accessories',
-    base_price:          450,
+    category_id:         2,
+    buying_price:        350,
+    selling_price:       450,
     qty_available:       22,
     low_stock_threshold: 8,
     is_active:           true,
@@ -56,7 +62,9 @@ export const seedProducts: Product[] = [
     description:         '10 000 mAh fast-charging power bank',
     image_emoji:         '🔋',
     category:            'Electronics',
-    base_price:          1200,
+    category_id:         1,
+    buying_price:        1000,
+    selling_price:       1200,
     qty_available:       14,
     low_stock_threshold: 5,
     is_active:           true,
@@ -70,7 +78,9 @@ export const seedProducts: Product[] = [
     description:         'Portable mini speaker, IPX5 water-resistant',
     image_emoji:         '🔊',
     category:            'Electronics',
-    base_price:          1500,
+    category_id:         1,
+    buying_price:        1200,
+    selling_price:       1500,
     qty_available:       9,
     low_stock_threshold: 5,
     is_active:           true,

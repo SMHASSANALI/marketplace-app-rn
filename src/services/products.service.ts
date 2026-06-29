@@ -64,8 +64,11 @@ export async function createProduct(input: CreateProductInput): Promise<Product>
   await simulateDelay();
 
   // ── MOCK ─────────────────────────────────────────────────────────────────
-  if (input.base_price <= 0) {
-    throw new ApiError('Base price must be greater than zero.', 'INVALID_BASE_PRICE');
+  if (input.buying_price <= 0) {
+    throw new ApiError('Buying price must be greater than zero.', 'INVALID_BUYING_PRICE');
+  }
+  if (input.selling_price < input.buying_price) {
+    throw new ApiError('Selling price must be at or above buying price.', 'INVALID_SELLING_PRICE');
   }
   const product: Product = {
     ...input,

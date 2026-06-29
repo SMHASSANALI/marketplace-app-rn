@@ -19,6 +19,7 @@
 
 import { seedUsers }               from './seed/users';
 import { seedProducts }            from './seed/products';
+import { seedCategories }          from './seed/categories';
 import { seedCustomers, seedCustomerAddresses } from './seed/customers';
 import { seedDeliveryOrigin, seedDeliveryBands } from './seed/delivery';
 import {
@@ -31,11 +32,12 @@ import { seedCashCollections, seedCashDeposits } from './seed/cash';
 import { seedManagerPermissions }               from './seed/managers';
 
 import type {
-  User, Product, Customer, CustomerAddress,
+  User, Product, Category, Customer, CustomerAddress,
   DeliveryOrigin, DeliveryBand,
   Order, OrderLineItem, OrderStatusLog, PaymentReceipt,
   CashCollection, CashDeposit,
   Settlement, SettlementLineItem,
+  RiderSettlement, RiderSettlementLineItem,
   ManagerPermission,
 } from '@/types';
 
@@ -44,21 +46,24 @@ import type {
  * Deep-clone the seed arrays so the originals remain untouched on hot-reload.
  */
 export const db = {
-  users:              JSON.parse(JSON.stringify(seedUsers))              as User[],
-  products:           JSON.parse(JSON.stringify(seedProducts))           as Product[],
-  customers:          JSON.parse(JSON.stringify(seedCustomers))          as Customer[],
-  customer_addresses: JSON.parse(JSON.stringify(seedCustomerAddresses))  as CustomerAddress[],
-  delivery_origin:    JSON.parse(JSON.stringify([seedDeliveryOrigin]))   as DeliveryOrigin[],
-  delivery_bands:     JSON.parse(JSON.stringify(seedDeliveryBands))      as DeliveryBand[],
-  orders:             JSON.parse(JSON.stringify(seedOrders))             as Order[],
-  order_line_items:   JSON.parse(JSON.stringify(seedOrderLineItems))     as OrderLineItem[],
-  order_status_logs:  JSON.parse(JSON.stringify(seedStatusLogs))         as OrderStatusLog[],
-  payment_receipts:   JSON.parse(JSON.stringify(seedPaymentReceipts))    as PaymentReceipt[],
-  cash_collections:   JSON.parse(JSON.stringify(seedCashCollections)) as CashCollection[],
-  cash_deposits:      JSON.parse(JSON.stringify(seedCashDeposits))    as CashDeposit[],
-  settlements:         [] as Settlement[],
-  settlement_line_items:[] as SettlementLineItem[],
-  manager_permissions: JSON.parse(JSON.stringify(seedManagerPermissions)) as ManagerPermission[],
+  users:                  JSON.parse(JSON.stringify(seedUsers))              as User[],
+  products:               JSON.parse(JSON.stringify(seedProducts))           as Product[],
+  categories:             JSON.parse(JSON.stringify(seedCategories))         as Category[],
+  customers:              JSON.parse(JSON.stringify(seedCustomers))          as Customer[],
+  customer_addresses:     JSON.parse(JSON.stringify(seedCustomerAddresses))  as CustomerAddress[],
+  delivery_origin:        JSON.parse(JSON.stringify([seedDeliveryOrigin]))   as DeliveryOrigin[],
+  delivery_bands:         JSON.parse(JSON.stringify(seedDeliveryBands))      as DeliveryBand[],
+  orders:                 JSON.parse(JSON.stringify(seedOrders))             as Order[],
+  order_line_items:       JSON.parse(JSON.stringify(seedOrderLineItems))     as OrderLineItem[],
+  order_status_logs:      JSON.parse(JSON.stringify(seedStatusLogs))         as OrderStatusLog[],
+  payment_receipts:       JSON.parse(JSON.stringify(seedPaymentReceipts))    as PaymentReceipt[],
+  cash_collections:       JSON.parse(JSON.stringify(seedCashCollections))    as CashCollection[],
+  cash_deposits:          JSON.parse(JSON.stringify(seedCashDeposits))       as CashDeposit[],
+  settlements:            [] as Settlement[],
+  settlement_line_items:  [] as SettlementLineItem[],
+  rider_settlements:      [] as RiderSettlement[],
+  rider_settlement_items: [] as RiderSettlementLineItem[],
+  manager_permissions:    JSON.parse(JSON.stringify(seedManagerPermissions)) as ManagerPermission[],
 };
 
 // ---------------------------------------------------------------------------

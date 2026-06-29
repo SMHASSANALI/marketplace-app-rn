@@ -4,13 +4,6 @@
  * Used in:
  *  - /modals/product-new  (create mode)
  *  - /modals/product-edit (edit mode, with deactivate button)
- *
- * The parent screen passes `onSubmit` which calls the appropriate service
- * mutation. Validation and loading state are handled internally; errors are
- * surfaced via Alert so the caller doesn't need to deal with error state.
- *
- * Validated output is typed separately (ValidatedValues) to make the
- * number→string conversion explicit at the boundary.
  */
 
 import React, { useState } from 'react';
@@ -29,25 +22,25 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-/** Internal form state — all fields are strings so controlled inputs work cleanly. */
 export interface ProductFormValues {
   name:                string;
   description:         string;
   image_emoji:         string;
   category:            string;
-  base_price:          string;
+  buying_price:        string;
+  selling_price:       string;
   qty_available:       string;
   low_stock_threshold: string;
   is_active:           boolean;
 }
 
-/** What the parent receives after validation — numbers are parsed, nulls preserved. */
 export interface ValidatedProductValues {
   name:                string;
   description:         string | null;
   image_emoji:         string;
   category:            string | null;
-  base_price:          number;
+  buying_price:        number;
+  selling_price:       number;
   qty_available:       number;
   low_stock_threshold: number;
   is_active:           boolean;
@@ -57,7 +50,6 @@ interface Props {
   initialValues?:    Partial<ProductFormValues>;
   onSubmit:          (values: ValidatedProductValues) => Promise<void>;
   submitLabel?:      string;
-  /** Show the Active/Inactive toggle — only needed in edit mode. */
   showActiveToggle?: boolean;
 }
 
@@ -71,7 +63,8 @@ function defaults(initial?: Partial<ProductFormValues>): ProductFormValues {
     description:         initial?.description         ?? '',
     image_emoji:         initial?.image_emoji         ?? '📦',
     category:            initial?.category            ?? '',
-    base_price:          initial?.base_price          ?? '',
+    buying_price:        initial?.buying_price        ?? '',
+    selling_price:       initial?.selling_price       ?? '',
     qty_available:       initial?.qty_available       ?? '',
     low_stock_threshold: initial?.low_stock_threshold ?? '5',
     is_active:           initial?.is_active           ?? true,
@@ -92,7 +85,6 @@ export function ProductForm({
   const [errors,     setErrors]     = useState<Partial<Record<keyof ProductFormValues, string>>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Generic field setter — also clears the field's error on change
   function set<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setValues(prev => ({ ...prev, [key]: value }));
     setErrors(prev => ({ ...prev, [key]: undefined }));
@@ -105,12 +97,19 @@ export function ProductForm({
   function validate(): ValidatedProductValues | null {
     const errs: Partial<Record<keyof ProductFormValues, string>> = {};
 
-    if (!values.name.trim())         errs.name = 'Product name is required.';
-    if (!values.image_emoji.trim())  errs.image_emoji = 'Emoji icon is required.';
+    if (!values.name.trim())        errs.name        = 'Product name is required.';
+    if (!values.image_emoji.trim()) errs.image_emoji = 'Emoji icon is required.';
 
-    const price = parseInt(values.base_price, 10);
-    if (!values.base_price.trim() || isNaN(price) || price <= 0) {
-      errs.base_price = 'Enter a valid price greater than 0.';
+    const buying = parseInt(values.buying_price, 10);
+    if (!values.buying_price.trim() || isNaN(buying) || buying <= 0) {
+      errs.buying_price = 'Enter a valid buying price greater than 0.';
+    }
+
+    const selling = parseInt(values.selling_price, 10);
+    if (!values.selling_price.trim() || isNaN(selling) || selling <= 0) {
+      errs.selling_price = 'Enter a valid selling price greater than 0.';
+    } else if (!isNaN(buying) && selling < buying) {
+      errs.selling_price = `Selling price must be ≥ buying price (Rs ${buying}).`;
     }
 
     const qty = parseInt(values.qty_available, 10);
@@ -133,21 +132,17 @@ export function ProductForm({
       description:         values.description.trim() || null,
       image_emoji:         values.image_emoji.trim(),
       category:            values.category.trim() || null,
-      base_price:          price,
+      buying_price:        buying,
+      selling_price:       selling,
       qty_available:       qty,
       low_stock_threshold: threshold,
       is_active:           values.is_active,
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Handlers
-  // ---------------------------------------------------------------------------
-
   async function handleSubmit() {
     const validated = validate();
     if (!validated) return;
-
     setSubmitting(true);
     try {
       await onSubmit(validated);
@@ -170,7 +165,6 @@ export function ProductForm({
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      {/* ── Product identity ─────────────────────────────────── */}
       <SectionHeader title="Product Details" />
 
       <TextInput
@@ -216,19 +210,34 @@ export function ProductForm({
         />
       </View>
 
-      {/* ── Pricing & inventory ──────────────────────────────── */}
       <SectionHeader title="Pricing & Inventory" style={{ marginTop: SPACING.xl }} />
 
-      <TextInput
-        label="Base Price (Rs) *"
-        placeholder="e.g. 1200"
-        value={values.base_price}
-        onChangeText={v => set('base_price', v.replace(/[^0-9]/g, ''))}
-        error={errors.base_price}
-        keyboardType="numeric"
-        returnKeyType="next"
-        helper="Cost / floor price — never shared with agents"
-      />
+      <View style={{ flexDirection: 'row', gap: SPACING.md }}>
+        <View style={{ flex: 1 }}>
+          <TextInput
+            label="Buying Price (Rs) *"
+            placeholder="e.g. 800"
+            value={values.buying_price}
+            onChangeText={v => set('buying_price', v.replace(/[^0-9]/g, ''))}
+            error={errors.buying_price}
+            keyboardType="numeric"
+            returnKeyType="next"
+            helper="Your cost — private"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <TextInput
+            label="Selling Price (Rs) *"
+            placeholder="e.g. 1200"
+            value={values.selling_price}
+            onChangeText={v => set('selling_price', v.replace(/[^0-9]/g, ''))}
+            error={errors.selling_price}
+            keyboardType="numeric"
+            returnKeyType="next"
+            helper="Agent's price floor"
+          />
+        </View>
+      </View>
 
       <View style={{ flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.md }}>
         <View style={{ flex: 1 }}>
@@ -256,7 +265,6 @@ export function ProductForm({
         </View>
       </View>
 
-      {/* ── Active toggle (edit mode only) ─────────────────── */}
       {showActiveToggle && (
         <>
           <SectionHeader title="Status" style={{ marginTop: SPACING.xl }} />
@@ -292,7 +300,6 @@ export function ProductForm({
         </>
       )}
 
-      {/* ── Actions ─────────────────────────────────────────── */}
       <View style={{ marginTop: SPACING.xl }}>
         <Button
           label={submitLabel}
@@ -305,10 +312,6 @@ export function ProductForm({
     </ScrollView>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Helper component — section divider label
-// ---------------------------------------------------------------------------
 
 function SectionHeader({ title, style }: { title: string; style?: object }) {
   return (

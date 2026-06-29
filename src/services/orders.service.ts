@@ -19,6 +19,12 @@ import { calculateBandForCoords }                                 from './delive
 // Internal helper — builds a fully-joined OrderFull from raw order ID
 // ---------------------------------------------------------------------------
 
+function effectiveQty(item: { quantity: number; quantity_picked_up: number | null; quantity_delivered: number | null }) {
+  if (item.quantity_delivered != null) return item.quantity_delivered;
+  if (item.quantity_picked_up  != null) return item.quantity_picked_up;
+  return item.quantity;
+}
+
 function buildOrderFull(order: Order): OrderFull {
   const customer = db.customers.find(c => c.id === order.customer_id)!;
   const address  = order.customer_address_id
@@ -32,15 +38,16 @@ function buildOrderFull(order: Order): OrderFull {
     const product = db.products.find(p => p.id === item.product_id);
     return {
       ...item,
-      product_name:  product?.name  ?? 'Unknown',
+      product_name:  product?.name        ?? 'Unknown',
       product_emoji: product?.image_emoji ?? '📦',
     };
   });
 
   const fulfilledItems = line_items.filter(i => i.fulfilled);
-  const subtotal        = fulfilledItems.reduce((s, i) => s + i.selling_price_snapshot * i.quantity, 0);
-  const total           = subtotal + order.delivery_fee_snapshot;
-  const commission_total= fulfilledItems.reduce((s, i) => s + i.commission_amount, 0);
+  const subtotal         = fulfilledItems.reduce((s, i) => s + i.agent_price_snapshot  * effectiveQty(i), 0);
+  const total            = subtotal + order.delivery_fee_snapshot;
+  const commission_total = fulfilledItems.reduce((s, i) => s + i.commission_amount,    0);
+  const owner_profit_total = fulfilledItems.reduce((s, i) => s + i.owner_profit_amount, 0);
 
   const payment_receipt = db.payment_receipts.find(r => r.order_id === order.id) ?? null;
   const hold_info       = order.status === 'delivered' && order.delivered_at
@@ -50,7 +57,7 @@ function buildOrderFull(order: Order): OrderFull {
   return {
     ...order,
     customer, address, agent, rider,
-    line_items, subtotal, total, commission_total,
+    line_items, subtotal, total, commission_total, owner_profit_total,
     payment_receipt, hold_info,
   };
 }
@@ -111,7 +118,7 @@ export async function getOrderById(id: number): Promise<OrderFull> {
 export interface CreateOrderLineItemInput {
   product_id:    number;
   quantity:      number;
-  selling_price: number; // must be >= product.base_price
+  selling_price: number; // agent's price — must be >= product.selling_price (Owner's floor)
 }
 
 /** Input required to create a new order. */
@@ -160,10 +167,10 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       excluded.push({ product_id: item.product_id, reason: 'Product not found or inactive.' });
       continue;
     }
-    if (item.selling_price < product.base_price) {
+    if (item.selling_price < product.selling_price) {
       excluded.push({
         product_id: item.product_id,
-        reason: `Selling price (Rs ${item.selling_price}) is below base price (Rs ${product.base_price}).`,
+        reason: `Selling price (Rs ${item.selling_price}) is below the floor price (Rs ${product.selling_price}).`,
       });
       continue;
     }
@@ -209,32 +216,43 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     agent_id:              input.agent_id,
     delivery_band_id:      band?.id ?? null,
     delivery_fee_snapshot: band?.delivery_fee ?? 0,
-    rider_payout_snapshot: null, // set when Rider is assigned
+    rider_payout_snapshot: null,
     payment_method:        input.payment_method,
     payment_status:        input.payment_method === 'prepaid' ? 'receipt_pending' : 'unpaid',
     status:                'pending',
     rider_id:              null,
     delivered_at:          null,
     created_at:            now(),
+    pickup_confirmed_at:   null,
+    pickup_confirmed_by:   null,
+    delivery_items_confirmed: false,
   };
   db.orders.push(order);
 
   // 5 — Insert line items
+  const LI_DEFAULTS = {
+    quantity_picked_up: null, quantity_delivered: null,
+    pickup_mismatch_flag: false, delivery_mismatch_flag: false,
+  };
+
   for (const item of fulfilled) {
-    const product = db.products.find(p => p.id === item.product_id)!;
-    const commission = (item.selling_price - product.base_price) * item.quantity;
+    const product         = db.products.find(p => p.id === item.product_id)!;
+    const commission      = (item.selling_price - product.selling_price) * item.quantity;
+    const owner_profit    = (product.selling_price - product.buying_price) * item.quantity;
     db.order_line_items.push({
-      id:                    nextId(db.order_line_items),
-      order_id:              orderId,
-      product_id:            item.product_id,
-      quantity:              item.quantity,
-      base_price_snapshot:   product.base_price,
-      selling_price_snapshot:item.selling_price,
-      commission_amount:     commission,
-      fulfilled:             true,
-      exclusion_reason:      null,
+      id:                      nextId(db.order_line_items),
+      order_id:                orderId,
+      product_id:              item.product_id,
+      quantity:                item.quantity,
+      buying_price_snapshot:   product.buying_price,
+      selling_price_snapshot:  product.selling_price,
+      agent_price_snapshot:    item.selling_price,
+      commission_amount:       commission,
+      owner_profit_amount:     owner_profit,
+      fulfilled:               true,
+      exclusion_reason:        null,
+      ...LI_DEFAULTS,
     });
-    // 6 — Decrement stock
     const pIdx = db.products.findIndex(p => p.id === item.product_id);
     db.products[pIdx].qty_available -= item.quantity;
   }
@@ -243,15 +261,18 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   for (const ex of excluded) {
     const product = db.products.find(p => p.id === ex.product_id);
     db.order_line_items.push({
-      id:                    nextId(db.order_line_items),
-      order_id:              orderId,
-      product_id:            ex.product_id,
-      quantity:              input.items.find(i => i.product_id === ex.product_id)?.quantity ?? 0,
-      base_price_snapshot:   product?.base_price ?? 0,
-      selling_price_snapshot:input.items.find(i => i.product_id === ex.product_id)?.selling_price ?? 0,
-      commission_amount:     0,
-      fulfilled:             false,
-      exclusion_reason:      ex.reason,
+      id:                      nextId(db.order_line_items),
+      order_id:                orderId,
+      product_id:              ex.product_id,
+      quantity:                input.items.find(i => i.product_id === ex.product_id)?.quantity ?? 0,
+      buying_price_snapshot:   product?.buying_price ?? 0,
+      selling_price_snapshot:  product?.selling_price ?? 0,
+      agent_price_snapshot:    input.items.find(i => i.product_id === ex.product_id)?.selling_price ?? 0,
+      commission_amount:       0,
+      owner_profit_amount:     0,
+      fulfilled:               false,
+      exclusion_reason:        ex.reason,
+      ...LI_DEFAULTS,
     });
   }
 
@@ -548,6 +569,128 @@ export async function assignRider(
   db.orders[idx] = { ...order, rider_id: riderId, rider_payout_snapshot: riderPayout };
   return updateOrderStatus(orderId, 'assigned', actorId);
   // ── END MOCK ─────────────────────────────────────────────────────────────
+}
+
+// ---------------------------------------------------------------------------
+// Feature 1: Pickup & Delivery confirmation
+// ---------------------------------------------------------------------------
+
+export interface PickupConfirmationItem {
+  line_item_id:      number;
+  quantity_picked_up: number;
+  reason?:           string; // required when quantity_picked_up < quantity
+}
+
+export async function confirmPickup(
+  orderId:  number,
+  actorId:  number,
+  items:    PickupConfirmationItem[],
+): Promise<OrderFull> {
+  await simulateDelay();
+
+  const oIdx = db.orders.findIndex(o => o.id === orderId);
+  if (oIdx === -1) throw new ApiError(`Order #${orderId} not found.`, 'ORDER_NOT_FOUND', 404);
+
+  const order = db.orders[oIdx];
+  if (order.status !== 'assigned') {
+    throw new ApiError('Pickup confirmation only allowed for assigned orders.', 'ORDER_INVALID_STATE');
+  }
+  if (order.pickup_confirmed_at) {
+    throw new ApiError('Pickup already confirmed for this order.', 'ORDER_PICKUP_ALREADY_CONFIRMED');
+  }
+
+  const timestamp = now();
+  for (const ci of items) {
+    const liIdx = db.order_line_items.findIndex(i => i.id === ci.line_item_id && i.order_id === orderId);
+    if (liIdx === -1) continue;
+    const li       = db.order_line_items[liIdx];
+    const pickedUp = Math.max(0, Math.min(ci.quantity_picked_up, li.quantity));
+    const mismatch = pickedUp < li.quantity;
+    const effQty   = pickedUp;
+    const commission     = (li.agent_price_snapshot - li.selling_price_snapshot) * effQty;
+    const owner_profit   = (li.selling_price_snapshot - li.buying_price_snapshot) * effQty;
+    db.order_line_items[liIdx] = {
+      ...li,
+      quantity_picked_up:   pickedUp,
+      pickup_mismatch_flag: mismatch,
+      exclusion_reason:     mismatch ? (ci.reason ?? 'Quantity shortfall at pickup') : li.exclusion_reason,
+      commission_amount:    commission,
+      owner_profit_amount:  owner_profit,
+    };
+  }
+
+  db.orders[oIdx] = { ...order, pickup_confirmed_at: timestamp, pickup_confirmed_by: actorId };
+  return buildOrderFull(db.orders[oIdx]);
+}
+
+export interface DeliveryConfirmationItem {
+  line_item_id:       number;
+  quantity_delivered: number;
+  reason?:            string;
+}
+
+export async function confirmDeliveryItems(
+  orderId:         number,
+  riderId:         number,
+  actorId:         number,
+  items:           DeliveryConfirmationItem[],
+  amountCollected?: number,
+): Promise<OrderFull> {
+  await simulateDelay();
+
+  const oIdx = db.orders.findIndex(o => o.id === orderId);
+  if (oIdx === -1) throw new ApiError(`Order #${orderId} not found.`, 'ORDER_NOT_FOUND', 404);
+
+  const order = db.orders[oIdx];
+  if (order.status !== 'out_for_delivery') {
+    throw new ApiError('Delivery confirmation only allowed for orders out for delivery.', 'ORDER_INVALID_STATE');
+  }
+  if (order.payment_method === 'cod' && amountCollected == null) {
+    throw new ApiError('Cash amount collected is required for COD orders.', 'CASH_AMOUNT_REQUIRED');
+  }
+
+  for (const ci of items) {
+    const liIdx = db.order_line_items.findIndex(i => i.id === ci.line_item_id && i.order_id === orderId);
+    if (liIdx === -1) continue;
+    const li         = db.order_line_items[liIdx];
+    const reference  = li.quantity_picked_up ?? li.quantity;
+    const delivered  = Math.max(0, Math.min(ci.quantity_delivered, reference));
+    const mismatch   = delivered < reference;
+    const effQty     = delivered;
+    const commission   = (li.agent_price_snapshot - li.selling_price_snapshot) * effQty;
+    const owner_profit = (li.selling_price_snapshot - li.buying_price_snapshot) * effQty;
+    db.order_line_items[liIdx] = {
+      ...li,
+      quantity_delivered:    delivered,
+      delivery_mismatch_flag: mismatch,
+      exclusion_reason:      mismatch ? (ci.reason ?? 'Quantity shortfall at delivery') : li.exclusion_reason,
+      commission_amount:     commission,
+      owner_profit_amount:   owner_profit,
+    };
+  }
+
+  db.orders[oIdx] = { ...order, delivery_items_confirmed: true };
+  const updated = await updateOrderStatus(orderId, 'delivered', actorId, 'Delivered by rider');
+
+  if (order.payment_method === 'cod' && amountCollected != null) {
+    const fulfilledItems = db.order_line_items.filter(i => i.order_id === orderId && i.fulfilled);
+    const expectedTotal  = fulfilledItems.reduce((s, i) => s + i.agent_price_snapshot * effectiveQty(i), 0)
+                         + order.delivery_fee_snapshot;
+    db.cash_collections.push({
+      id:               nextId(db.cash_collections),
+      order_id:         orderId,
+      rider_id:         riderId,
+      deposit_id:       null,
+      amount_collected: amountCollected,
+      mismatch_flag:    amountCollected !== expectedTotal,
+      reconciled:       false,
+      reconciled_at:    null,
+    });
+    const idx = db.orders.findIndex(o => o.id === orderId);
+    if (idx >= 0) db.orders[idx] = { ...db.orders[idx], payment_status: 'collected' };
+  }
+
+  return updated;
 }
 
 // ---------------------------------------------------------------------------

@@ -7,7 +7,13 @@ import {
   getRiderDeposits,
   logDeposit,
 } from '@/services/rider.service';
-import { getOrderById } from '@/services/orders.service';
+import {
+  getOrderById,
+  confirmPickup,
+  confirmDeliveryItems,
+  type PickupConfirmationItem,
+  type DeliveryConfirmationItem,
+} from '@/services/orders.service';
 
 export const riderDeliveryKeys = {
   deliveries: (riderId: number) => ['rider', 'deliveries', riderId] as const,
@@ -51,6 +57,34 @@ export function useMarkDelivered() {
       orderId, riderId, actorId, amountCollected,
     }: { orderId: number; riderId: number; actorId: number; amountCollected?: number }) =>
       markDelivered(orderId, riderId, actorId, amountCollected),
+    onSuccess: (_data, { orderId, riderId }) => {
+      qc.invalidateQueries({ queryKey: ['rider'] });
+      qc.invalidateQueries({ queryKey: riderDeliveryKeys.order(orderId) });
+      qc.invalidateQueries({ queryKey: riderDeliveryKeys.collections(riderId) });
+    },
+  });
+}
+
+export function useConfirmPickup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, actorId, items }: {
+      orderId: number; actorId: number; items: PickupConfirmationItem[];
+    }) => confirmPickup(orderId, actorId, items),
+    onSuccess: (_data, { orderId }) => {
+      qc.invalidateQueries({ queryKey: ['rider'] });
+      qc.invalidateQueries({ queryKey: riderDeliveryKeys.order(orderId) });
+    },
+  });
+}
+
+export function useConfirmDeliveryItems() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, riderId, actorId, items, amountCollected }: {
+      orderId: number; riderId: number; actorId: number;
+      items: DeliveryConfirmationItem[]; amountCollected?: number;
+    }) => confirmDeliveryItems(orderId, riderId, actorId, items, amountCollected),
     onSuccess: (_data, { orderId, riderId }) => {
       qc.invalidateQueries({ queryKey: ['rider'] });
       qc.invalidateQueries({ queryKey: riderDeliveryKeys.order(orderId) });

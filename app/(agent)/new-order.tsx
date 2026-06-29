@@ -326,7 +326,7 @@ function ItemsStep({ draft, updateDraft, onBack, onNext }: ItemsStepProps) {
       const next = Math.min(existing.quantity + 1, product.qty_available);
       updateDraft({ cart: draft.cart.map(i => i.product.id === product.id ? { ...i, quantity: next } : i) });
     } else {
-      updateDraft({ cart: [...draft.cart, { product, quantity: 1, selling_price: product.base_price }] });
+      updateDraft({ cart: [...draft.cart, { product, quantity: 1, selling_price: product.selling_price }] });
     }
   }
 
@@ -354,7 +354,7 @@ function ItemsStep({ draft, updateDraft, onBack, onNext }: ItemsStepProps) {
   }
 
   const totalCommission = draft.cart.reduce(
-    (s, i) => s + (i.selling_price - i.product.base_price) * i.quantity, 0,
+    (s, i) => s + (i.selling_price - i.product.selling_price) * i.quantity, 0,
   );
 
   return (
@@ -467,7 +467,7 @@ function ReviewStep({ draft, updateDraft, onBack, onSuccess }: ReviewStepProps) 
 
   const deliveryFee  = bandInfo?.band?.delivery_fee ?? 0;
   const subtotal     = draft.cart.reduce((s, i) => s + i.selling_price * i.quantity, 0);
-  const commission   = draft.cart.reduce((s, i) => s + (i.selling_price - i.product.base_price) * i.quantity, 0);
+  const commission   = draft.cart.reduce((s, i) => s + (i.selling_price - i.product.selling_price) * i.quantity, 0);
   const total        = subtotal + deliveryFee;
   const isPrepaid    = draft.paymentMethod === 'prepaid';
 

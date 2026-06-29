@@ -1,5 +1,5 @@
 import { useState }                                        from 'react';
-import { ActivityIndicator, Alert, Image, Platform, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams, router }             from 'expo-router';
 import * as ImagePicker                                    from 'expo-image-picker';
 import { Ionicons }                                        from '@expo/vector-icons';
@@ -15,8 +15,8 @@ import {
   COLORS, FONT_SIZES, RADIUS, SHADOW, SPACING,
 } from '@/lib/theme';
 
-const STATUS_COLOR = { pending: COLORS.warning, approved: COLORS.info, paid: COLORS.teal };
-const STATUS_LABEL = { pending: 'Pending Approval', approved: 'Approved', paid: 'Paid' };
+const STATUS_COLOR = { pending: COLORS.warning, approved: COLORS.info, paid: COLORS.teal, confirmed: COLORS.teal };
+const STATUS_LABEL = { pending: 'Pending Approval', approved: 'Approved', paid: 'Paid — awaiting confirmation', confirmed: 'Confirmed' };
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -73,7 +73,8 @@ export default function SettlementDetailScreen() {
   const { id }       = useLocalSearchParams<{ id: string }>();
   const settlementId = Number(id);
 
-  const [receiptUri, setReceiptUri] = useState<string | null>(null);
+  const [receiptUri,        setReceiptUri]        = useState<string | null>(null);
+  const [paymentReference,  setPaymentReference]  = useState('');
 
   const { data: settlement, isLoading, error } = useSettlementDetail(settlementId);
   const { mutateAsync: doApprove, isPending: approving } = useApproveSettlement();
@@ -126,6 +127,10 @@ export default function SettlementDetailScreen() {
   }
 
   async function handleMarkPaid() {
+    if (!paymentReference.trim()) {
+      Alert.alert('Reference required', 'Enter a payment reference (e.g. bank transfer ID or note) before marking paid.');
+      return;
+    }
     const msg = `Mark ${formatCurrency(settlement!.total_commission)} as paid to ${settlement!.agent.name}?`;
     if (Platform.OS === 'web') {
       if (!window.confirm(msg)) return;
@@ -139,7 +144,7 @@ export default function SettlementDetailScreen() {
       if (!ok) return;
     }
     try {
-      await doPaid({ id: settlementId, paymentReceiptUri: receiptUri ?? undefined });
+      await doPaid({ id: settlementId, paymentReference: paymentReference.trim(), paymentReceiptUri: receiptUri ?? undefined });
       router.back();
     } catch (err) {
       Alert.alert('Error', err instanceof ApiError ? err.message : 'Something went wrong.');
@@ -198,7 +203,7 @@ export default function SettlementDetailScreen() {
                     {li.product_name} ×{li.quantity}
                   </Text>
                   <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted }}>
-                    {formatCurrency(li.selling_price_snapshot)} – {formatCurrency(li.base_price_snapshot)}
+                    Agent: {formatCurrency(li.agent_price_snapshot)} · Floor: {formatCurrency(li.selling_price_snapshot)}
                   </Text>
                 </View>
               </View>
@@ -220,9 +225,25 @@ export default function SettlementDetailScreen() {
           </>
         )}
 
-        {/* Mark as Paid — with optional receipt upload */}
+        {/* Mark as Paid — reference + optional receipt */}
         {isApproved && (
           <>
+            <SectionLabel text="Payment Reference *" />
+            <View style={{
+              backgroundColor: COLORS.surface, borderRadius: RADIUS.md,
+              borderWidth: 1, borderColor: COLORS.border, padding: SPACING.sm,
+              marginBottom: SPACING.sm,
+            }}>
+              <TextInput
+                value={paymentReference}
+                onChangeText={setPaymentReference}
+                placeholder="e.g. Bank transfer ID, 'Cash handed over in person', etc."
+                placeholderTextColor={COLORS.muted}
+                style={{ fontSize: FONT_SIZES.sm, color: COLORS.text, minHeight: 36 }}
+                multiline
+              />
+            </View>
+
             <SectionLabel text="Payment Receipt (optional)" />
             {receiptUri ? (
               <View style={{ gap: SPACING.sm }}>
@@ -271,20 +292,36 @@ export default function SettlementDetailScreen() {
           </>
         )}
 
-        {/* Paid — show receipt if uploaded */}
-        {isPaid && (
+        {/* Paid / Confirmed — show reference and receipt */}
+        {(isPaid || settlement.status === 'confirmed') && (
           <>
-            <SectionLabel text="Payment Complete" />
+            <SectionLabel text="Payment Record" />
             <View style={{
               backgroundColor: COLORS.teal + '18', borderRadius: RADIUS.md,
               borderWidth: 1, borderColor: COLORS.teal + '40',
-              padding: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+              padding: SPACING.md, gap: SPACING.xs,
               marginBottom: existingReceipt ? SPACING.md : 0,
             }}>
-              <Ionicons name="checkmark-circle" size={22} color={COLORS.teal} />
-              <Text style={{ fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.teal }}>
-                Commission paid to {settlement.agent.name}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <Ionicons name="checkmark-circle" size={22} color={COLORS.teal} />
+                <Text style={{ fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.teal }}>
+                  Commission paid to {settlement.agent.name}
+                </Text>
+              </View>
+              {settlement.payment_reference ? (
+                <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted, paddingLeft: 30 }}>
+                  Ref: {settlement.payment_reference}
+                </Text>
+              ) : null}
+              {settlement.acknowledged_at ? (
+                <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.teal, paddingLeft: 30 }}>
+                  Confirmed by agent on {formatDate(settlement.acknowledged_at)}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted, paddingLeft: 30 }}>
+                  Awaiting confirmation from agent
+                </Text>
+              )}
             </View>
             {existingReceipt && (
               <>

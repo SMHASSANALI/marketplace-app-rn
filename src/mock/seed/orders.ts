@@ -21,6 +21,10 @@ function daysAgo(n: number): string {
 // Orders
 // ---------------------------------------------------------------------------
 
+const ORDER_DEFAULTS = {
+  pickup_confirmed_at: null, pickup_confirmed_by: null, delivery_items_confirmed: false,
+};
+
 export const seedOrders: Order[] = [
   {
     id:                    1,
@@ -37,6 +41,9 @@ export const seedOrders: Order[] = [
     rider_id:              USER_IDS.RIDER_IMRAN,
     delivered_at:          daysAgo(9),
     created_at:            daysAgo(10),
+    pickup_confirmed_at:   daysAgo(9),
+    pickup_confirmed_by:   USER_IDS.RIDER_IMRAN,
+    delivery_items_confirmed: true,
   },
   {
     id:                    2,
@@ -53,6 +60,9 @@ export const seedOrders: Order[] = [
     rider_id:              USER_IDS.RIDER_TARIQ,
     delivered_at:          daysAgo(3),
     created_at:            daysAgo(5),
+    pickup_confirmed_at:   daysAgo(3),
+    pickup_confirmed_by:   USER_IDS.RIDER_TARIQ,
+    delivery_items_confirmed: true,
   },
   {
     id:                    3,
@@ -69,6 +79,9 @@ export const seedOrders: Order[] = [
     rider_id:              USER_IDS.RIDER_IMRAN,
     delivered_at:          null,
     created_at:            daysAgo(1),
+    pickup_confirmed_at:   daysAgo(0),
+    pickup_confirmed_by:   USER_IDS.RIDER_IMRAN,
+    delivery_items_confirmed: false,
   },
   {
     id:                    4,
@@ -85,6 +98,7 @@ export const seedOrders: Order[] = [
     rider_id:              null,
     delivered_at:          null,
     created_at:            daysAgo(2),
+    ...ORDER_DEFAULTS,
   },
   {
     id:                    5,
@@ -101,6 +115,7 @@ export const seedOrders: Order[] = [
     rider_id:              null,
     delivered_at:          null,
     created_at:            daysAgo(0),
+    ...ORDER_DEFAULTS,
   },
   {
     id:                    7,
@@ -113,10 +128,11 @@ export const seedOrders: Order[] = [
     rider_payout_snapshot: null,
     payment_method:        'cod',
     payment_status:        'unpaid',
-    status:                'confirmed',     // confirmed, no rider yet → owner can assign
-    rider_id:              null,
+    status:                'assigned',
+    rider_id:              USER_IDS.RIDER_IMRAN,
     delivered_at:          null,
     created_at:            daysAgo(0),
+    ...ORDER_DEFAULTS,
   },
   {
     id:                    6,
@@ -128,11 +144,12 @@ export const seedOrders: Order[] = [
     delivery_fee_snapshot: 275,
     rider_payout_snapshot: null,
     payment_method:        'prepaid',
-    payment_status:        'receipt_pending',  // awaiting owner verification
+    payment_status:        'receipt_pending',
     status:                'pending',
     rider_id:              null,
     delivered_at:          null,
     created_at:            daysAgo(0),
+    ...ORDER_DEFAULTS,
   },
 ];
 
@@ -140,31 +157,44 @@ export const seedOrders: Order[] = [
 // Order line items
 // ---------------------------------------------------------------------------
 
+const LI_DEFAULTS = {
+  quantity_picked_up: null, quantity_delivered: null,
+  pickup_mismatch_flag: false, delivery_mismatch_flag: false,
+};
+
 export const seedOrderLineItems: OrderLineItem[] = [
-  // ORD-1001: 1× Phone Case @ Rs 100 (base Rs 90) → commission Rs 10
+  // ORD-1001: 1× Phone Case. buying=50, selling=90, agent charged=100 → commission=10, owner_profit=40
   { id: 1, order_id: 1, product_id: 1, quantity: 1,
-    base_price_snapshot: 90,   selling_price_snapshot: 100,  commission_amount: 10,  fulfilled: true, exclusion_reason: null },
-  // ORD-1002: 1× Earbuds @ Rs 2100 (base Rs 1800) → commission Rs 300
+    buying_price_snapshot: 50,   selling_price_snapshot: 90,   agent_price_snapshot: 100,
+    commission_amount: 10,  owner_profit_amount: 40,  fulfilled: true, exclusion_reason: null, ...LI_DEFAULTS },
+  // ORD-1002: 1× Earbuds. buying=1500, selling=1800, agent=2100 → commission=300, owner_profit=300
   { id: 2, order_id: 2, product_id: 2, quantity: 1,
-    base_price_snapshot: 1800, selling_price_snapshot: 2100, commission_amount: 300, fulfilled: true, exclusion_reason: null },
-  // ORD-1002: 2× Watch Strap @ Rs 500 each (base Rs 450) → commission Rs 100
+    buying_price_snapshot: 1500, selling_price_snapshot: 1800, agent_price_snapshot: 2100,
+    commission_amount: 300, owner_profit_amount: 300, fulfilled: true, exclusion_reason: null, ...LI_DEFAULTS },
+  // ORD-1002: 2× Watch Strap. buying=350, selling=450, agent=500 → commission=100, owner_profit=200
   { id: 3, order_id: 2, product_id: 3, quantity: 2,
-    base_price_snapshot: 450,  selling_price_snapshot: 500,  commission_amount: 100, fulfilled: true, exclusion_reason: null },
-  // ORD-1003: 1× Power Bank @ Rs 1350 (base Rs 1200) → commission Rs 150
+    buying_price_snapshot: 350,  selling_price_snapshot: 450,  agent_price_snapshot: 500,
+    commission_amount: 100, owner_profit_amount: 200, fulfilled: true, exclusion_reason: null, ...LI_DEFAULTS },
+  // ORD-1003: 1× Power Bank. buying=1000, selling=1200, agent=1350 → commission=150, owner_profit=200
   { id: 4, order_id: 3, product_id: 4, quantity: 1,
-    base_price_snapshot: 1200, selling_price_snapshot: 1350, commission_amount: 150, fulfilled: true, exclusion_reason: null },
-  // ORD-1004: 1× Bluetooth Speaker @ Rs 1800 (base Rs 1500) → commission Rs 300
+    buying_price_snapshot: 1000, selling_price_snapshot: 1200, agent_price_snapshot: 1350,
+    commission_amount: 150, owner_profit_amount: 200, fulfilled: true, exclusion_reason: null, ...LI_DEFAULTS },
+  // ORD-1004: 1× Bluetooth Speaker. buying=1200, selling=1500, agent=1800 → commission=300, owner_profit=300
   { id: 5, order_id: 4, product_id: 5, quantity: 1,
-    base_price_snapshot: 1500, selling_price_snapshot: 1800, commission_amount: 300, fulfilled: true, exclusion_reason: null },
-  // ORD-1005: 2× Screen Protector @ Rs 80 each (base Rs 50) → commission Rs 60
-  { id: 6, order_id: 5, product_id: 6, quantity: 2,
-    base_price_snapshot: 50,   selling_price_snapshot: 80,   commission_amount: 60,  fulfilled: true, exclusion_reason: null },
-  // ORD-1006: 1× Bluetooth Speaker @ Rs 1900 (base Rs 1500) → commission Rs 400
+    buying_price_snapshot: 1200, selling_price_snapshot: 1500, agent_price_snapshot: 1800,
+    commission_amount: 300, owner_profit_amount: 300, fulfilled: true, exclusion_reason: null, ...LI_DEFAULTS },
+  // ORD-1005: 2× Phone Case. buying=50, selling=90, agent=110 → commission=40, owner_profit=80
+  { id: 6, order_id: 5, product_id: 1, quantity: 2,
+    buying_price_snapshot: 50,   selling_price_snapshot: 90,   agent_price_snapshot: 110,
+    commission_amount: 40,  owner_profit_amount: 80,  fulfilled: true, exclusion_reason: null, ...LI_DEFAULTS },
+  // ORD-1006: 1× Bluetooth Speaker. buying=1200, selling=1500, agent=1900 → commission=400, owner_profit=300
   { id: 7, order_id: 6, product_id: 5, quantity: 1,
-    base_price_snapshot: 1500, selling_price_snapshot: 1900, commission_amount: 400, fulfilled: true, exclusion_reason: null },
-  // ORD-1007: 1× Power Bank @ Rs 1350 (base Rs 1200) → commission Rs 150
+    buying_price_snapshot: 1200, selling_price_snapshot: 1500, agent_price_snapshot: 1900,
+    commission_amount: 400, owner_profit_amount: 300, fulfilled: true, exclusion_reason: null, ...LI_DEFAULTS },
+  // ORD-1007: 1× Power Bank. buying=1000, selling=1200, agent=1350 → commission=150, owner_profit=200
   { id: 8, order_id: 7, product_id: 4, quantity: 1,
-    base_price_snapshot: 1200, selling_price_snapshot: 1350, commission_amount: 150, fulfilled: true, exclusion_reason: null },
+    buying_price_snapshot: 1000, selling_price_snapshot: 1200, agent_price_snapshot: 1350,
+    commission_amount: 150, owner_profit_amount: 200, fulfilled: true, exclusion_reason: null, ...LI_DEFAULTS },
 ];
 
 // ---------------------------------------------------------------------------

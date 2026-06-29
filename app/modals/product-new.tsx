@@ -25,7 +25,7 @@ export default function ProductNewModal() {
   }
 
   async function handleSubmit(values: ValidatedProductValues) {
-    await create({ ...values, owner_id: user!.id, images: [] });
+    await create({ ...values, owner_id: user!.id, images: [], category_id: null });
     router.back();
   }
 

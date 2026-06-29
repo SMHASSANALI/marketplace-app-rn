@@ -3,9 +3,9 @@
  *
  * Features:
  * - Quantity stepper (1 → stock limit)
- * - Selling price input: must be ≥ base_price; commission updates live
+ * - Selling price input: must be ≥ product.selling_price (Agent's floor); commission updates live
  * - Remove button (×)
- * - Shows commission = (selling_price − base_price) × qty; negative = error
+ * - Shows commission = (agent_price − selling_price) × qty; negative = error
  */
 
 import React, { useState } from 'react';
@@ -19,7 +19,7 @@ import { COLORS, FONT_SIZES, RADIUS, SPACING } from '@/lib/theme';
 export interface CartItem {
   product:       Product;
   quantity:      number;
-  selling_price: number; // agent-set; must be >= product.base_price
+  selling_price: number; // agent-set; must be >= product.selling_price (floor)
 }
 
 interface Props {
@@ -33,21 +33,21 @@ export function CartItemRow({ item, onUpdate, onRemove }: Props) {
 
   const parsedPrice  = parseInt(priceText, 10);
   const validPrice   = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0;
-  const belowBase    = validPrice < item.product.base_price && priceText !== '';
-  const commission   = (validPrice - item.product.base_price) * item.quantity;
+  const belowFloor   = validPrice < item.product.selling_price && priceText !== '';
+  const commission   = (validPrice - item.product.selling_price) * item.quantity;
 
   function handlePriceChange(text: string) {
     const clean = text.replace(/[^0-9]/g, '');
     setPriceText(clean);
     const price = parseInt(clean, 10);
-    if (!isNaN(price) && price >= item.product.base_price) {
+    if (!isNaN(price) && price >= item.product.selling_price) {
       onUpdate(item.product.id, item.quantity, price);
     }
   }
 
   function changeQty(delta: number) {
     const next = Math.max(1, Math.min(item.product.qty_available, item.quantity + delta));
-    onUpdate(item.product.id, next, validPrice || item.product.base_price);
+    onUpdate(item.product.id, next, validPrice || item.product.selling_price);
   }
 
   return (
@@ -113,14 +113,14 @@ export function CartItemRow({ item, onUpdate, onRemove }: Props) {
         {/* Selling price */}
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted, marginBottom: 2 }}>
-            Sell price (Base: {formatCurrency(item.product.base_price)})
+            Your price (Floor: {formatCurrency(item.product.selling_price)})
           </Text>
           <View
             style={{
               flexDirection:   'row',
               alignItems:      'center',
               borderWidth:     1,
-              borderColor:     belowBase ? COLORS.danger : COLORS.border,
+              borderColor:     belowFloor ? COLORS.danger : COLORS.border,
               borderRadius:    RADIUS.sm,
               backgroundColor: COLORS.bg,
               paddingHorizontal: 8,
@@ -132,14 +132,14 @@ export function CartItemRow({ item, onUpdate, onRemove }: Props) {
               value={priceText}
               onChangeText={handlePriceChange}
               keyboardType="numeric"
-              placeholder={String(item.product.base_price)}
+              placeholder={String(item.product.selling_price)}
               placeholderTextColor={COLORS.muted}
               style={{ flex: 1, fontSize: FONT_SIZES.sm, color: COLORS.text }}
             />
           </View>
-          {belowBase && (
+          {belowFloor && (
             <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.danger, marginTop: 2 }}>
-              Must be ≥ {formatCurrency(item.product.base_price)}
+              Must be ≥ {formatCurrency(item.product.selling_price)}
             </Text>
           )}
         </View>

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getAllSettlements, getSettlementDetail,
   approveSettlement, markSettlementPaid,
+  acknowledgeSettlement, disputeSettlement,
 } from '@/services/settlement.service';
 import { runSettlement } from '@/lib/settlement';
 
@@ -45,8 +46,33 @@ export function useApproveSettlement() {
 export function useMarkSettlementPaid() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, paymentReceiptUri }: { id: number; paymentReceiptUri?: string }) =>
-      markSettlementPaid(id, paymentReceiptUri),
+    mutationFn: ({ id, paymentReference, paymentReceiptUri, paidBy }: {
+      id: number; paymentReference: string; paymentReceiptUri?: string; paidBy?: number;
+    }) => markSettlementPaid(id, paymentReference, paymentReceiptUri, paidBy),
+    onSuccess:  (_, { id }) => {
+      qc.invalidateQueries({ queryKey: settlementKeys.all() });
+      qc.invalidateQueries({ queryKey: settlementKeys.detail(id) });
+    },
+  });
+}
+
+export function useAcknowledgeSettlement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, comment }: { id: number; comment?: string }) =>
+      acknowledgeSettlement(id, comment),
+    onSuccess:  (_, { id }) => {
+      qc.invalidateQueries({ queryKey: settlementKeys.all() });
+      qc.invalidateQueries({ queryKey: settlementKeys.detail(id) });
+    },
+  });
+}
+
+export function useDisputeSettlement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, comment }: { id: number; comment: string }) =>
+      disputeSettlement(id, comment),
     onSuccess:  (_, { id }) => {
       qc.invalidateQueries({ queryKey: settlementKeys.all() });
       qc.invalidateQueries({ queryKey: settlementKeys.detail(id) });

@@ -23,7 +23,7 @@ function buildDeposit(deposit: CashDeposit): DepositFull {
     .map(c => {
       const order   = db.orders.find(o => o.id === c.order_id);
       const items   = db.order_line_items.filter(li => li.order_id === c.order_id && li.fulfilled);
-      const subtotal = items.reduce((s, li) => s + li.selling_price_snapshot * li.quantity, 0);
+      const subtotal = items.reduce((s, li) => s + li.agent_price_snapshot * li.quantity, 0);
       return {
         ...c,
         order_code:     order?.order_code ?? `ORD-${c.order_id}`,

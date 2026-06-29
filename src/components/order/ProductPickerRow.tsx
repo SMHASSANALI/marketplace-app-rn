@@ -58,7 +58,7 @@ export function ProductPickerRow({ product, qtyInCart, onAdd }: Props) {
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
           <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted }}>
-            Base: {formatCurrency(product.base_price)}
+            Floor: {formatCurrency(product.selling_price)}
           </Text>
           <Text style={{ fontSize: FONT_SIZES.xs, color: noStock ? COLORS.danger : COLORS.muted }}>
             · {product.qty_available === 0 ? 'Out of stock' : `${product.qty_available} left`}

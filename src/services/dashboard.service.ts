@@ -15,8 +15,9 @@ export interface OwnerSummary {
     total:            number;
   };
   revenue: {
-    total_gmv:        number;
-    total_commission: number;
+    total_gmv:         number;
+    total_commission:  number;
+    total_owner_profit: number;
   };
   pending_receipts:    number;
   pending_deposits:    number;
@@ -30,13 +31,15 @@ export async function getOwnerSummary(): Promise<OwnerSummary> {
   const orders = db.orders;
 
   const deliveredOrders = orders.filter(o => o.status === 'delivered');
-  let total_gmv        = 0;
-  let total_commission = 0;
+  let total_gmv          = 0;
+  let total_commission   = 0;
+  let total_owner_profit = 0;
   for (const o of deliveredOrders) {
     const items = db.order_line_items.filter(li => li.order_id === o.id && li.fulfilled);
-    total_gmv        += items.reduce((s, li) => s + li.selling_price_snapshot * li.quantity, 0)
-                       + o.delivery_fee_snapshot;
-    total_commission += items.reduce((s, li) => s + li.commission_amount, 0);
+    total_gmv          += items.reduce((s, li) => s + li.agent_price_snapshot * li.quantity, 0)
+                        + o.delivery_fee_snapshot;
+    total_commission   += items.reduce((s, li) => s + li.commission_amount, 0);
+    total_owner_profit += items.reduce((s, li) => s + li.owner_profit_amount, 0);
   }
 
   return {
@@ -47,7 +50,7 @@ export async function getOwnerSummary(): Promise<OwnerSummary> {
       delivered:        deliveredOrders.length,
       total:            orders.length,
     },
-    revenue: { total_gmv, total_commission },
+    revenue: { total_gmv, total_commission, total_owner_profit },
     pending_receipts:    orders.filter(o => o.payment_status === 'receipt_pending').length,
     pending_deposits:    db.cash_deposits.filter(d => !d.owner_confirmed).length,
     pending_settlements: db.settlements.filter(s => s.status === 'pending').length,

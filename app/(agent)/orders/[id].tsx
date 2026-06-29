@@ -338,7 +338,7 @@ export default function AgentOrderDetailScreen() {
                   </Text>
                 </View>
                 <Text style={{ fontSize: FONT_SIZES.sm, fontWeight: '600', color: COLORS.text }}>
-                  {formatCurrency(item.selling_price_snapshot * item.quantity)}
+                  {formatCurrency(item.agent_price_snapshot * item.quantity)}
                 </Text>
               </View>
               {i < fulfilledItems.length - 1 && (

@@ -118,7 +118,7 @@ function AgentProductRow({ product }: { product: Product }) {
           fontWeight: '600',
           marginTop:  3,
         }}>
-          Min. {formatCurrency(product.base_price)}
+          Floor: {formatCurrency(product.selling_price)}
         </Text>
       </View>
     </View>

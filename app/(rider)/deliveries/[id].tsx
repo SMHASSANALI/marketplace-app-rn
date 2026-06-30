@@ -182,6 +182,17 @@ export default function DeliveryDetailScreen() {
   // Delivery confirmation state
   const [deliveryItems, setDeliveryItems] = useState<ConfirmItemState[] | null>(null);
 
+  // Must be before early returns to satisfy rules of hooks
+  const expectedCash = useMemo(() => {
+    if (!deliveryItems || !order) return 0;
+    const fulfilled = order.line_items.filter(i => i.fulfilled);
+    return deliveryItems.reduce((s, di) => {
+      const li = fulfilled.find(i => i.id === di.lineItemId);
+      if (!li) return s;
+      return s + li.agent_price_snapshot * di.confirmedQty;
+    }, 0) + order.delivery_fee_snapshot;
+  }, [deliveryItems, order]);
+
   if (isLoading) {
     return <Screen><ActivityIndicator style={{ flex: 1 }} color={COLORS.info} /></Screen>;
   }
@@ -264,16 +275,6 @@ export default function DeliveryDetailScreen() {
     setDeliveryItems(prev => prev?.map(i => i.lineItemId === id ? { ...i, confirmedQty: qty, reason } : i) ?? null);
   }
 
-  // Recalculate expected cash total based on delivery quantities
-  const expectedCash = useMemo(() => {
-    if (!deliveryItems) return order.total;
-    return deliveryItems.reduce((s, di) => {
-      const li = fulfilledItems.find(i => i.id === di.lineItemId);
-      if (!li) return s;
-      return s + li.agent_price_snapshot * di.confirmedQty;
-    }, 0) + order.delivery_fee_snapshot;
-  }, [deliveryItems, fulfilledItems, order]);
-
   async function handleConfirmDelivery() {
     if (!user || !deliveryItems) return;
 
@@ -336,7 +337,14 @@ export default function DeliveryDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: order.order_code, headerShown: true }} />
+      <Stack.Screen options={{
+        title: order.order_code, headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
 
       <Screen scrollable padded>
         {/* Order header */}

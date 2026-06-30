@@ -26,6 +26,16 @@ export interface User {
   role: UserRole;
   status: 'active' | 'suspended';
   created_at: string; // ISO 8601
+  /** Street address / area (optional). */
+  address: string | null;
+  /** National Identity Card number (13 digits). */
+  cnic: string | null;
+  /** Secondary contact phone number. */
+  second_contact: string | null;
+  /** Date from which the account is valid (ISO date, e.g. "2026-01-01"). */
+  start_date: string | null;
+  /** Date until which the account is valid; null = no expiry. */
+  end_date: string | null;
 }
 
 /** Individual permission key that can be granted to a Manager by the Owner. */
@@ -66,6 +76,8 @@ export interface Category {
 
 export interface Product {
   id: number;
+  /** Auto-generated SKU (e.g. "WOM-SLI-001"). Can be overridden. */
+  sku: string | null;
   name: string;
   description: string | null;
   /** Emoji used as a product icon (e.g. "📱"). */
@@ -440,6 +452,52 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+// ---------------------------------------------------------------------------
+// REFUNDS & EXCHANGES
+// ---------------------------------------------------------------------------
+
+export type RefundExchangeType   = 'refund' | 'exchange';
+export type RefundExchangeStatus = 'pending' | 'approved' | 'completed' | 'rejected';
+
+export interface RefundExchange {
+  id: number;
+  order_id: number;
+  type: RefundExchangeType;
+  status: RefundExchangeStatus;
+  reason: string;
+  /** Calculated total refund amount for type='refund'. 0 for exchanges. */
+  refund_amount: number;
+  processed_by: number | null;
+  processed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+}
+
+export interface RefundExchangeLineItem {
+  id: number;
+  refund_exchange_id: number;
+  order_line_item_id: number;
+  product_id: number;
+  /** Quantity being returned/exchanged. */
+  return_quantity: number;
+  /** For exchange: new product_id to send instead. Null for refunds. */
+  exchange_product_id: number | null;
+  /** For exchange: quantity of replacement product. */
+  exchange_quantity: number | null;
+}
+
+export interface RefundExchangeFull extends RefundExchange {
+  order_code: string;
+  customer_name: string;
+  processed_by_name: string | null;
+  line_items: (RefundExchangeLineItem & {
+    product_name:          string;
+    product_emoji:         string;
+    unit_price:            number;
+    exchange_product_name: string | null;
+  })[];
 }
 
 /** Pagination parameters accepted by list endpoints. */

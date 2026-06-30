@@ -10,9 +10,14 @@ import { db, nextId, now }          from '@/mock/db';
 import { simulateDelay }            from '@/mock/delay';
 
 export interface CreateUserInput {
-  name:  string;
-  phone: string;
-  role:  Exclude<UserRole, 'owner'>;
+  name:           string;
+  phone:          string;
+  role:           Exclude<UserRole, 'owner'>;
+  address?:       string;
+  cnic?:          string;
+  second_contact?:string;
+  start_date?:    string;
+  end_date?:      string;
 }
 
 /** Returns all users of a given role (active + suspended). */
@@ -37,12 +42,17 @@ export async function createUser(input: CreateUserInput): Promise<User> {
   );
 
   const user: User = {
-    id:         nextId(db.users),
-    name:       input.name.trim(),
-    phone:      input.phone.trim(),
-    role:       input.role,
-    status:     'active',
-    created_at: now(),
+    id:             nextId(db.users),
+    name:           input.name.trim(),
+    phone:          input.phone.trim(),
+    role:           input.role,
+    status:         'active',
+    created_at:     now(),
+    address:        input.address?.trim() || null,
+    cnic:           input.cnic?.trim() || null,
+    second_contact: input.second_contact?.trim() || null,
+    start_date:     input.start_date || null,
+    end_date:       input.end_date || null,
   };
   db.users.push(user);
   return user;

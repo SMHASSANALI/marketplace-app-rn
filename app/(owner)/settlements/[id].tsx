@@ -155,7 +155,14 @@ export default function SettlementDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: `Settlement #${settlementId}`, headerShown: true }} />
+      <Stack.Screen options={{
+        title: `Settlement #${settlementId}`, headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
       <Screen scrollable padded>
 
         {/* Status banner */}

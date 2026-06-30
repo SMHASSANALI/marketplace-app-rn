@@ -1,6 +1,6 @@
 import { useState }         from 'react';
-import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons }             from '@expo/vector-icons';
 
 import { Screen }               from '@/components/ui/Screen';
@@ -119,7 +119,16 @@ export default function AgentOrderDetailModal() {
   const fulfilledItems = order.line_items.filter(i => i.fulfilled);
 
   return (
-    <Screen scrollable padded>
+    <>
+      <Stack.Screen options={{
+        title: order.order_code, headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
+      <Screen scrollable padded>
       {/* ── Order code + status ── */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
         <View style={{ flex: 1 }}>
@@ -291,5 +300,6 @@ export default function AgentOrderDetailModal() {
 
       <View style={{ height: SPACING['2xl'] }} />
     </Screen>
+    </>
   );
 }

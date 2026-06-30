@@ -6,7 +6,9 @@
  * and deactivating (removing) the band.
  */
 
-import { router, useLocalSearchParams } from 'expo-router';
+import { Pressable }        from 'react-native';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Ionicons }         from '@expo/vector-icons';
 
 import { Screen }          from '@/components/ui/Screen';
 import { LoadingSpinner }  from '@/components/ui/LoadingSpinner';
@@ -18,6 +20,7 @@ import {
   useUpdateBand,
 } from '@/hooks/useDeliveryBands';
 import { useAuthContext }  from '@/context/AuthContext';
+import { COLORS }          from '@/lib/theme';
 
 export default function BandEditModal() {
   const { user }                     = useAuthContext();
@@ -49,7 +52,16 @@ export default function BandEditModal() {
   }
 
   return (
-    <Screen scrollable={false} padded={false}>
+    <>
+      <Stack.Screen options={{
+        title: 'Edit Delivery Band', headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
+      <Screen scrollable={false} padded={false}>
       <BandForm
         initialValues={{
           name:                 band.name,
@@ -63,5 +75,6 @@ export default function BandEditModal() {
         onDeactivate={handleDeactivate}
       />
     </Screen>
+    </>
   );
 }

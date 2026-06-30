@@ -5,7 +5,7 @@
  * Only the owner can reach this screen.
  */
 
-import { useState }                                           from 'react';
+import React, { useState }                                    from 'react';
 import { Alert, FlatList, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { Stack }                                              from 'expo-router';
 import { Ionicons }                                          from '@expo/vector-icons';
@@ -118,26 +118,75 @@ function AgentRow({ agent, onSuspend, onReactivate, onDelete }: {
 }
 
 // ---------------------------------------------------------------------------
+// Reusable field row
+// ---------------------------------------------------------------------------
+
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View>
+      <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted, marginBottom: 4 }}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+function Field({
+  value, onChangeText, placeholder, error, keyboardType = 'default', required,
+}: {
+  value: string; onChangeText: (t: string) => void; placeholder?: string;
+  error?: string; keyboardType?: any; required?: boolean;
+}) {
+  return (
+    <>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={COLORS.muted}
+        keyboardType={keyboardType}
+        style={{
+          borderWidth: 1, borderRadius: RADIUS.sm, padding: SPACING.sm,
+          fontSize: FONT_SIZES.sm, color: COLORS.text, backgroundColor: COLORS.bg,
+          borderColor: error ? COLORS.danger : COLORS.border,
+        }}
+      />
+      {error ? <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.danger, marginTop: 2 }}>{error}</Text> : null}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Create agent form
 // ---------------------------------------------------------------------------
 
 function CreateAgentForm({ onClose }: { onClose: () => void }) {
-  const [name,  setName]   = useState('');
-  const [phone, setPhone]  = useState('');
-  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+  const [name,          setName]          = useState('');
+  const [phone,         setPhone]         = useState('');
+  const [address,       setAddress]       = useState('');
+  const [cnic,          setCnic]          = useState('');
+  const [secondContact, setSecondContact] = useState('');
+  const [startDate,     setStartDate]     = useState('');
+  const [endDate,       setEndDate]       = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { mutateAsync: create, isPending } = useCreateUser();
 
   async function handleSubmit() {
-    const e: typeof errors = {};
+    const e: Record<string, string> = {};
     if (!name.trim())  e.name  = 'Name is required.';
-    if (!phone.trim()) e.phone = 'Phone is required.';
+    if (!phone.trim()) e.phone = 'Mobile number is required.';
+    if (cnic.trim() && !/^\d{13}$/.test(cnic.trim())) e.cnic = 'CNIC must be 13 digits.';
     if (Object.keys(e).length) { setErrors(e); return; }
     setErrors({});
     try {
-      await create({ name: name.trim(), phone: phone.trim(), role: 'agent' });
-      if (Platform.OS !== 'web') {
-        Alert.alert('Agent Added', `${name.trim()} can now log in as an agent.`);
-      }
+      await create({
+        name: name.trim(), phone: phone.trim(), role: 'agent',
+        address: address.trim() || undefined,
+        cnic: cnic.trim() || undefined,
+        second_contact: secondContact.trim() || undefined,
+        start_date: startDate.trim() || undefined,
+        end_date: endDate.trim() || undefined,
+      });
+      if (Platform.OS !== 'web') Alert.alert('Agent Added', `${name.trim()} can now log in as an agent.`);
       onClose();
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Something went wrong.');
@@ -150,52 +199,39 @@ function CreateAgentForm({ onClose }: { onClose: () => void }) {
       borderWidth: 1, borderColor: COLORS.brand,
       padding: SPACING.md, marginBottom: SPACING.md, gap: SPACING.sm, ...SHADOW.sm,
     }}>
-      <Text style={{ fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.text }}>
-        New Agent
-      </Text>
+      <Text style={{ fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.text }}>New Agent</Text>
 
-      {/* Name */}
-      <View>
-        <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted, marginBottom: 4 }}>Full Name</Text>
-        <TextInput
-          value={name}
-          onChangeText={t => { setName(t); setErrors(e => ({ ...e, name: undefined })); }}
-          placeholder="e.g. Bilal Raza"
-          placeholderTextColor={COLORS.muted}
-          style={{
-            borderWidth: 1, borderRadius: RADIUS.sm, padding: SPACING.sm,
-            fontSize: FONT_SIZES.sm, color: COLORS.text, backgroundColor: COLORS.bg,
-            borderColor: errors.name ? COLORS.danger : COLORS.border,
-          }}
-        />
-        {errors.name && (
-          <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.danger, marginTop: 2 }}>{errors.name}</Text>
-        )}
+      <FieldRow label="Full Name *">
+        <Field value={name} onChangeText={t => { setName(t); setErrors(e => ({ ...e, name: '' })); }}
+          placeholder="e.g. Bilal Raza" error={errors.name} />
+      </FieldRow>
+      <FieldRow label="Mobile Number *">
+        <Field value={phone} onChangeText={t => { setPhone(t); setErrors(e => ({ ...e, phone: '' })); }}
+          placeholder="03XXXXXXXXX" error={errors.phone} keyboardType="phone-pad" />
+      </FieldRow>
+      <FieldRow label="Address">
+        <Field value={address} onChangeText={setAddress} placeholder="Street / Area" />
+      </FieldRow>
+      <FieldRow label="CNIC (13 digits)">
+        <Field value={cnic} onChangeText={t => { setCnic(t); setErrors(e => ({ ...e, cnic: '' })); }}
+          placeholder="4220112345671" error={errors.cnic} keyboardType="numeric" />
+      </FieldRow>
+      <FieldRow label="Second Contact">
+        <Field value={secondContact} onChangeText={setSecondContact}
+          placeholder="03XXXXXXXXX (optional)" keyboardType="phone-pad" />
+      </FieldRow>
+      <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
+        <View style={{ flex: 1 }}>
+          <FieldRow label="Start Date">
+            <Field value={startDate} onChangeText={setStartDate} placeholder="YYYY-MM-DD" />
+          </FieldRow>
+        </View>
+        <View style={{ flex: 1 }}>
+          <FieldRow label="End Date (validity)">
+            <Field value={endDate} onChangeText={setEndDate} placeholder="YYYY-MM-DD or blank" />
+          </FieldRow>
+        </View>
       </View>
-
-      {/* Phone */}
-      <View>
-        <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted, marginBottom: 4 }}>Phone Number</Text>
-        <TextInput
-          value={phone}
-          onChangeText={t => { setPhone(t); setErrors(e => ({ ...e, phone: undefined })); }}
-          placeholder="03XXXXXXXXX"
-          placeholderTextColor={COLORS.muted}
-          keyboardType="phone-pad"
-          style={{
-            borderWidth: 1, borderRadius: RADIUS.sm, padding: SPACING.sm,
-            fontSize: FONT_SIZES.sm, color: COLORS.text, backgroundColor: COLORS.bg,
-            borderColor: errors.phone ? COLORS.danger : COLORS.border,
-          }}
-        />
-        {errors.phone && (
-          <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.danger, marginTop: 2 }}>{errors.phone}</Text>
-        )}
-      </View>
-
-      <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted }}>
-        The agent can log in using this phone number. Any non-empty password will be accepted in the current build.
-      </Text>
 
       <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
         <View style={{ flex: 1 }}>

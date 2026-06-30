@@ -9,8 +9,9 @@
  */
 
 import React, { useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
-import { router }           from 'expo-router';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { router, Stack }   from 'expo-router';
+import { Ionicons }        from '@expo/vector-icons';
 
 import { Screen }           from '@/components/ui/Screen';
 import { LoadingSpinner }   from '@/components/ui/LoadingSpinner';
@@ -72,7 +73,16 @@ export default function OriginEditModal() {
   }
 
   return (
-    <Screen scrollable={false} padded={false}>
+    <>
+      <Stack.Screen options={{
+        title: 'Edit Dispatch Origin', headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
+      <Screen scrollable={false} padded={false}>
       <ScrollView
         style={{ flex: 1, backgroundColor: COLORS.bg }}
         contentContainerStyle={{ padding: SPACING.base, paddingBottom: SPACING['2xl'] }}
@@ -133,6 +143,7 @@ export default function OriginEditModal() {
           <Button label="Save Origin" onPress={handleSave} loading={saving} fullWidth size="lg" />
         </View>
       </ScrollView>
-    </Screen>
+      </Screen>
+    </>
   );
 }

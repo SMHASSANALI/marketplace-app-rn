@@ -198,7 +198,14 @@ export default function OwnerOrderDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: order.order_code, headerShown: true }} />
+      <Stack.Screen options={{
+        title: order.order_code, headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
 
       <Screen scrollable padded>
         {/* ── Order header ── */}

@@ -5,12 +5,15 @@
  * lands at the end of the list by default.
  */
 
-import { router }         from 'expo-router';
+import { Pressable }      from 'react-native';
+import { router, Stack }  from 'expo-router';
+import { Ionicons }       from '@expo/vector-icons';
 import { Screen }         from '@/components/ui/Screen';
 import { BandForm }       from '@/components/delivery/BandForm';
 import type { ValidatedBandValues } from '@/components/delivery/BandForm';
 import { useCreateBand, useDeliveryBands } from '@/hooks/useDeliveryBands';
 import { useAuthContext } from '@/context/AuthContext';
+import { COLORS }         from '@/lib/theme';
 
 export default function BandNewModal() {
   const { user }                 = useAuthContext();
@@ -32,8 +35,18 @@ export default function BandNewModal() {
   }
 
   return (
-    <Screen scrollable={false} padded={false}>
-      <BandForm submitLabel="Create Band" onSubmit={handleSubmit} />
-    </Screen>
+    <>
+      <Stack.Screen options={{
+        title: 'New Delivery Band', headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
+      <Screen scrollable={false} padded={false}>
+        <BandForm submitLabel="Create Band" onSubmit={handleSubmit} />
+      </Screen>
+    </>
   );
 }

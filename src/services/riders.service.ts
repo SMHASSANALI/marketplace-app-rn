@@ -29,12 +29,17 @@ export async function createRider(input: CreateRiderInput): Promise<User> {
   if (dup) throw new ApiError('A user with this phone number already exists.', 'RIDER_PHONE_DUPLICATE');
 
   const rider: User = {
-    id:         nextId(db.users),
-    name:       input.name.trim(),
-    phone:      input.phone.trim(),
-    role:       'rider',
-    status:     'active',
-    created_at: now(),
+    id:             nextId(db.users),
+    name:           input.name.trim(),
+    phone:          input.phone.trim(),
+    role:           'rider',
+    status:         'active',
+    created_at:     now(),
+    address:        null,
+    cnic:           null,
+    second_contact: null,
+    start_date:     null,
+    end_date:       null,
   };
   db.users.push(rider);
   return rider;

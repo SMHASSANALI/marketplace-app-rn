@@ -59,6 +59,10 @@ export default function OwnerLayout() {
         options={{ title: 'Settle', tabBarIcon: tabIcon('people-outline') }}
       />
       <Tabs.Screen
+        name="refunds"
+        options={{ title: 'Refunds', headerShown: false, tabBarIcon: tabIcon('return-up-back-outline') }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{ title: 'Settings', tabBarIcon: tabIcon('settings-outline') }}
       />
@@ -69,6 +73,7 @@ export default function OwnerLayout() {
       <Tabs.Screen name="receipts/[orderId]"         options={{ href: null }} />
       <Tabs.Screen name="reconciliation/[depositId]" options={{ href: null }} />
       <Tabs.Screen name="settlements/[id]"           options={{ href: null }} />
+      <Tabs.Screen name="refunds/[id]"               options={{ href: null }} />
       <Tabs.Screen name="settings/riders"            options={{ href: null }} />
       <Tabs.Screen name="settings/managers"          options={{ href: null }} />
       <Tabs.Screen name="settings/agents"            options={{ href: null }} />

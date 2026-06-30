@@ -8,7 +8,7 @@
 
 import { useState }                          from 'react';
 import { Alert, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { router, useLocalSearchParams }      from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker                      from 'expo-image-picker';
 import { Ionicons }                          from '@expo/vector-icons';
 
@@ -170,7 +170,16 @@ export default function ProductEditModal() {
   }
 
   return (
-    <Screen scrollable={false} padded={false}>
+    <>
+      <Stack.Screen options={{
+        title: 'Edit Product', headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
+      <Screen scrollable={false} padded={false}>
       <ImageStrip
         images={currentImages}
         onAdd={handleAddImage}
@@ -188,10 +197,12 @@ export default function ProductEditModal() {
           low_stock_threshold: String(product.low_stock_threshold),
           is_active:           product.is_active,
         }}
+        sku={product.sku}
         submitLabel="Save Changes"
         showActiveToggle
         onSubmit={handleSubmit}
       />
     </Screen>
+    </>
   );
 }

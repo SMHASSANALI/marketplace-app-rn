@@ -1,5 +1,5 @@
-import { ActivityIndicator, FlatList, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams }             from 'expo-router';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { Stack, router, useLocalSearchParams }     from 'expo-router';
 import { Ionicons }                               from '@expo/vector-icons';
 
 import { Screen }             from '@/components/ui/Screen';
@@ -104,7 +104,14 @@ export default function CustomerHistoryScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: customer.name, headerShown: true }} />
+      <Stack.Screen options={{
+        title: customer.name, headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
       <Screen scrollable={false} padded={false}>
         <FlatList
           data={orders}

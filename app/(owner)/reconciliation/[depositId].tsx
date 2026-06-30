@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, Platform, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, router }            from 'expo-router';
 import { Ionicons }                                       from '@expo/vector-icons';
 
@@ -114,12 +114,14 @@ export default function DepositDetailScreen() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title:       deposit.deposit_reference ?? `Deposit #${id}`,
-          headerShown: true,
-        }}
-      />
+      <Stack.Screen options={{
+        title: deposit.deposit_reference ?? `Deposit #${id}`, headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
 
       <Screen scrollable padded>
 

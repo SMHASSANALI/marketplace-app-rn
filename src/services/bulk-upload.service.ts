@@ -248,6 +248,7 @@ export async function commitUpload(preview: BulkUploadPreview): Promise<BulkUplo
         owner_id:            db.users.find(u => u.role === 'owner')?.id ?? 1,
         created_at:          timestamp,
         images:              [],
+        sku:                 null,
       };
       db.products.push(product);
       created.push(product);

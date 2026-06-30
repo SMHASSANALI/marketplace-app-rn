@@ -13,6 +13,31 @@ import { ApiError, Product }  from '@/types';
 import { db, nextId, now }    from '@/mock/db';
 import { simulateDelay }      from '@/mock/delay';
 
+/**
+ * Generates a SKU from category + product name.
+ * e.g. "Women's Apparel" + "Stitched Linen 3-Piece" → "WOM-SLI-042"
+ */
+export function generateSku(category: string, productName: string): string {
+  const catPrefix = (category || 'GEN')
+    .replace(/[^a-zA-Z\s]/g, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(w => w.substring(0, 3).toUpperCase())
+    .slice(0, 2)
+    .join('');
+
+  const namePrefix = (productName || 'PRD')
+    .replace(/[^a-zA-Z\s]/g, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase())
+    .slice(0, 3)
+    .join('');
+
+  const seq = String(db.products.length + 1).padStart(3, '0');
+  return `${catPrefix || 'GEN'}-${namePrefix || 'PRD'}-${seq}`;
+}
+
 /** Filters accepted by getProducts(). */
 export interface GetProductsFilter {
   activeOnly?: boolean;
@@ -72,6 +97,7 @@ export async function createProduct(input: CreateProductInput): Promise<Product>
   }
   const product: Product = {
     ...input,
+    sku:        input.sku ?? generateSku(input.category ?? '', input.name),
     id:         nextId(db.products),
     is_active:  true,
     created_at: now(),

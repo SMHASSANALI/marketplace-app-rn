@@ -1,5 +1,5 @@
 import { useState }                                              from 'react';
-import { ActivityIndicator, Alert, Platform, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { Stack, router, useLocalSearchParams }                   from 'expo-router';
 import { Ionicons }                                             from '@expo/vector-icons';
 
@@ -109,7 +109,14 @@ export default function ManagerReceiptDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: `Receipt · ${order.order_code}`, headerShown: true }} />
+      <Stack.Screen options={{
+        title: `Receipt · ${order.order_code}`, headerShown: true,
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 4 }}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </Pressable>
+        ),
+      }} />
       <Screen scrollable padded>
 
         {/* Receipt file */}

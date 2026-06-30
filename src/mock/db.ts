@@ -39,6 +39,7 @@ import type {
   Settlement, SettlementLineItem,
   RiderSettlement, RiderSettlementLineItem,
   ManagerPermission,
+  RefundExchange, RefundExchangeLineItem,
 } from '@/types';
 
 /**
@@ -64,6 +65,8 @@ export const db = {
   rider_settlements:      [] as RiderSettlement[],
   rider_settlement_items: [] as RiderSettlementLineItem[],
   manager_permissions:    JSON.parse(JSON.stringify(seedManagerPermissions)) as ManagerPermission[],
+  refund_exchanges:       [] as RefundExchange[],
+  refund_exchange_items:  [] as RefundExchangeLineItem[],
 };
 
 // ---------------------------------------------------------------------------

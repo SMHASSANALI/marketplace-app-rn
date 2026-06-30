@@ -48,6 +48,7 @@ export interface ValidatedProductValues {
 
 interface Props {
   initialValues?:    Partial<ProductFormValues>;
+  sku?:              string | null;
   onSubmit:          (values: ValidatedProductValues) => Promise<void>;
   submitLabel?:      string;
   showActiveToggle?: boolean;
@@ -77,6 +78,7 @@ function defaults(initial?: Partial<ProductFormValues>): ProductFormValues {
 
 export function ProductForm({
   initialValues,
+  sku,
   onSubmit,
   submitLabel      = 'Save Product',
   showActiveToggle = false,
@@ -166,6 +168,24 @@ export function ProductForm({
       showsVerticalScrollIndicator={false}
     >
       <SectionHeader title="Product Details" />
+
+      {/* SKU — read-only, auto-generated */}
+      <View style={{
+        backgroundColor: COLORS.surfaceAlt,
+        borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.border,
+        paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+        marginBottom: SPACING.md,
+        flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+      }}>
+        <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.muted, flex: 1 }}>SKU</Text>
+        <Text style={{
+          fontSize: FONT_SIZES.sm, fontWeight: '700',
+          color: sku ? COLORS.text : COLORS.muted,
+          fontFamily: 'monospace',
+        }}>
+          {sku ?? 'Auto-generated on save'}
+        </Text>
+      </View>
 
       <TextInput
         label="Product Name *"

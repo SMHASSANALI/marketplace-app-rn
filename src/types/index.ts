@@ -45,7 +45,8 @@ export type ManagerPermissionKey =
   | 'verify_receipts'
   | 'confirm_deposits'
   | 'approve_settlements'
-  | 'view_customer_history';
+  | 'view_customer_history'
+  | 'refunds_exchanges';
 
 export interface ManagerPermission {
   id: number;

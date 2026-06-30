@@ -26,6 +26,7 @@ const ALL_PERMISSIONS: { key: ManagerPermissionKey; label: string; description: 
   { key: 'confirm_deposits',     label: 'Confirm Deposits',      description: 'Confirm that rider cash deposits have been received' },
   { key: 'approve_settlements',  label: 'Approve Settlements',   description: 'Approve agent commission settlements before payment' },
   { key: 'view_customer_history',label: 'View Customer History', description: 'Access customer order history across all agents' },
+  { key: 'refunds_exchanges',    label: 'Refunds & Exchanges',   description: 'Create, approve, and process refund and exchange requests' },
 ];
 
 // ---------------------------------------------------------------------------
